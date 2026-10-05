@@ -1,0 +1,17 @@
+name = "lead-forge"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare Pages static build output directory
+pages_build_output_dir = "static"
+
+# Cloudflare D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "serpapi"
+database_id = "6d21281f-8bf0-410d-9776-dc25691c7e8c"
+
+# Cloudflare R2 Bucket Binding
+[[r2_buckets]]
+binding = "SITES_BUCKET"
+bucket_name = "sites"

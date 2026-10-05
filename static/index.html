@@ -1,0 +1,1078 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f4f6fb">
+<title>Lead Forge | Business CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light;
+  font-family: "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #182230;
+  background: #f4f6fb;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --ink: #182230;
+  --muted: #778397;
+  --line: #e7eaf1;
+  --blue: #5546e8;
+  --blue-dark: #4335ca;
+  --green: #14805f;
+  --red: #c23f52;
+  --panel: #fff;
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 350px; background: #f4f6fb; }
+button, input, select, textarea { font: inherit; }
+.topbar {
+  height: 72px;
+  padding: 0 max(28px, calc((100vw - 1380px) / 2));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #f8f9ff;
+  background: #171b2e;
+  border-bottom: 1px solid #ffffff12;
+}
+.brand { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 750; letter-spacing: -.35px; }
+.brandmark {
+  width: 37px; height: 37px; border-radius: 12px; display: grid; place-items: center;
+  background: linear-gradient(145deg, #a59bff, #6253ed 62%, #4738d5);
+  color: #fff; font-family: "Manrope", sans-serif; font-size: 18px; font-weight: 800;
+  box-shadow: 0 5px 18px #5c4dec55;
+}
+.top-right {
+  display: flex; align-items: center; gap: 10px; padding: 6px 14px; border: 1px solid #ffffff1a;
+  border-radius: 99px; color: #c4c8d6; font-size: 12px; font-weight: 600;
+  background: #ffffff08;
+}
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: #41d6a1; box-shadow: 0 0 0 4px #41d6a122; }
+.user-menu { display: flex; align-items: center; gap: 12px; }
+.user-email { color: #e2e8f0; font-size: 12px; font-weight: 650; }
+.role-badge {
+  display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 99px;
+  font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.role-root { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.role-admin { background: #fce7f3; color: #9d174d; border: 1px solid #fbcfe8; }
+.role-editor { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+.role-developer { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+
+/* Auth Container */
+.auth-wrapper {
+  position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px;
+  background: radial-gradient(circle at top, #20263f 0%, #111422 100%); color: #fff;
+}
+.auth-card {
+  width: min(440px, 100%); padding: 38px 34px; border: 1px solid #ffffff1a; border-radius: 24px;
+  background: rgba(255, 255, 255, 0.04); backdrop-filter: blur(16px); box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+}
+.auth-brand { display: flex; justify-content: center; margin-bottom: 20px; }
+.auth-title { text-align: center; margin-bottom: 26px; }
+.auth-title h1 { margin: 6px 0 4px; font-family: "Manrope", sans-serif; font-size: 26px; font-weight: 800; color: #fff; letter-spacing: -.6px; }
+.auth-title p { margin: 0; color: #9aa4b7; font-size: 13px; line-height: 1.5; }
+.auth-tabs { display: flex; gap: 6px; margin-bottom: 22px; background: #ffffff0e; padding: 5px; border-radius: 12px; }
+.auth-tab { flex: 1; padding: 10px; border: 0; background: transparent; color: #a4adbe; font-weight: 700; font-size: 13px; border-radius: 8px; cursor: pointer; transition: all .2s; }
+.auth-tab.active { background: #5546e8; color: #fff; box-shadow: 0 4px 14px #5546e844; }
+.auth-form { display: flex; flex-direction: column; gap: 16px; }
+.auth-form label { font-size: 12px; font-weight: 750; color: #c4c8d6; margin-bottom: 5px; display: block; }
+.auth-form input { width: 100%; padding: 12px 14px; border: 1px solid #ffffff1f; border-radius: 10px; background: #ffffff0d; color: #fff; outline: none; font-size: 14px; transition: border-color .18s; }
+.auth-form input:focus { border-color: #857bf0; box-shadow: 0 0 0 3px #5546e833; }
+.auth-btn { width: 100%; min-height: 44px; margin-top: 10px; font-size: 14px; font-weight: 700; }
+.auth-hint { margin-top: 18px; text-align: center; color: #7e8799; font-size: 11px; line-height: 1.5; }
+
+.wrap { max-width: 1380px; margin: auto; padding: 42px 28px 64px; }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 27px; }
+.eyebrow { margin-bottom: 9px; color: var(--blue); text-transform: uppercase; letter-spacing: 1.6px; font-size: 10px; font-weight: 800; }
+.page-head h1 { margin: 0 0 8px; color: #171b2e; font-family: "Manrope", sans-serif; font-size: clamp(30px, 3vw, 38px); letter-spacing: -1.8px; line-height: 1.12; }
+.page-head p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.page-head-actions { display: flex; gap: 10px; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 22px; }
+.stat {
+  position: relative; overflow: hidden; min-height: 116px; padding: 20px 22px; border: 1px solid #e7eaf1;
+  border-radius: 15px; background: #fff; box-shadow: 0 4px 15px #24304a07;
+}
+.stat:after { content: ""; position: absolute; right: -19px; top: -29px; width: 92px; height: 92px; border-radius: 50%; background: #6556f20d; }
+.stat:nth-child(2):after { background: #0baf7c10; }
+.stat:nth-child(3):after { background: #f3a62b12; }
+.stat-label { color: #768196; font-size: 12px; font-weight: 650; }
+.stat-value { margin-top: 9px; color: #171b2e; font-family: "Manrope", sans-serif; font-size: 30px; font-weight: 800; letter-spacing: -1.1px; line-height: 1; }
+.search-panel, .list-panel { border: 1px solid #e7eaf1; border-radius: 16px; background: var(--panel); box-shadow: 0 8px 28px #24304a08; }
+.search-panel { margin-bottom: 19px; padding: 22px 23px; }
+.section-title { margin: 0 0 14px; color: #22283a; font-family: "Manrope", sans-serif; font-size: 15px; font-weight: 800; letter-spacing: -.3px; }
+.search-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.field, .control {
+  height: 43px; padding: 0 13px; border: 1px solid #e1e5ed; border-radius: 10px; outline: none;
+  background: #fff; color: var(--ink); font-size: 13px; transition: border-color .18s, box-shadow .18s, background .18s;
+}
+.field::placeholder { color: #9aa3b3; }
+.field:focus, .control:focus, textarea:focus { border-color: #857bf0; box-shadow: 0 0 0 4px #5546e814; }
+.search-term { flex: 1; min-width: 220px; }
+.location { width: 270px; }
+.pages { width: 86px; }
+.btn {
+  min-height: 38px; padding: 9px 14px; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  border: 1px solid transparent; border-radius: 9px; cursor: pointer; text-decoration: none; white-space: nowrap;
+  font-size: 12px; font-weight: 700; transition: transform .16s, background .16s, border-color .16s, box-shadow .16s;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:focus-visible { outline: 3px solid #5546e84a; outline-offset: 2px; }
+.btn:disabled { opacity: .52; cursor: not-allowed; transform: none; }
+.btn-primary { color: #fff; background: linear-gradient(135deg, #6557f1, #4e40dc); box-shadow: 0 5px 12px #5546e82b; }
+.btn-primary:hover { background: linear-gradient(135deg, #594be4, #4335ca); box-shadow: 0 7px 16px #5546e83d; }
+.btn-secondary { border-color: #e1e5ed; color: #374155; background: #fff; }
+.btn-secondary:hover { border-color: #cbd1de; background: #f9faff; }
+.btn-soft { color: #4e40dc; background: #f1efff; }
+.btn-danger { border-color: #f0d9de; color: var(--red); background: #fff; }
+.btn-danger:hover { border-color: #e9bdc6; background: #fff6f7; }
+.btn-small { min-height: 32px; padding: 7px 10px; font-size: 11px; }
+.section-note { margin-top: 12px; color: #858fa1; font-size: 11px; line-height: 1.55; }
+.list-panel { overflow: hidden; }
+.list-head { min-height: 70px; padding: 15px 21px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line); }
+.list-title { display: flex; align-items: center; gap: 11px; }
+.list-title h2 { margin: 0; color: #22283a; font-family: "Manrope", sans-serif; font-size: 15px; font-weight: 800; letter-spacing: -.3px; }
+.count { padding: 4px 9px; border: 1px solid #e8e9f3; border-radius: 99px; color: #6054d9; background: #f4f2ff; font-size: 11px; font-weight: 750; }
+.list-tools { display: flex; align-items: center; gap: 9px; }
+.filter { width: 260px; height: 38px; }
+.pipeline-filters { padding: 12px 20px; display: flex; align-items: center; flex-wrap: wrap; gap: 9px; border-bottom: 1px solid #eff1f5; background: #fff; }
+.pipeline-filters .field { min-width: 145px; height: 35px; padding: 0 10px; color: #596579; font-size: 11px; }
+.pipeline-filters .filter-caption { margin-right: 3px; color: #8a94a6; font-size: 10px; font-weight: 750; letter-spacing: .7px; text-transform: uppercase; }
+.generation-progress { width: 150px; display: grid; gap: 5px; color: #778397; font-size: 10px; }
+.generation-progress-label { display: flex; justify-content: space-between; gap: 6px; }
+.generation-progress-label span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.generation-progress progress { width: 100%; height: 5px; overflow: hidden; border: 0; border-radius: 99px; appearance: none; background: #efedff; }
+.generation-progress progress::-webkit-progress-bar { border-radius: 99px; background: #efedff; }
+.generation-progress progress::-webkit-progress-value { border-radius: 99px; background: linear-gradient(90deg,#8174f5,#5546e8); }
+.generation-progress progress::-moz-progress-bar { border-radius: 99px; background: #5546e8; }
+.table-wrap { overflow: auto; }
+table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+th { padding: 12px 13px; border-bottom: 1px solid #eceef4; color: #929bad; background: #fafbfe; text-align: left; text-transform: uppercase; letter-spacing: .85px; font-size: 9px; font-weight: 800; }
+td { padding: 14px 13px; border-bottom: 1px solid #eff1f5; color: #465166; font-size: 12px; vertical-align: middle; }
+tbody tr { transition: background .15s; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: #fafaff; }
+.check-cell { width: 38px; padding-left: 19px !important; padding-right: 3px !important; }
+.check { width: 15px; height: 15px; accent-color: var(--blue); cursor: pointer; vertical-align: middle; }
+.lead-name { max-width: 240px; overflow: hidden; color: #22283a; font-size: 12px; font-weight: 750; text-overflow: ellipsis; }
+.subtle { max-width: 250px; margin-top: 4px; overflow: hidden; color: #8993a5; font-size: 10px; text-overflow: ellipsis; }
+.contact { color: #566176; text-decoration: none; }
+.contact:hover { color: var(--blue); }
+.rating { color: #30384b; font-weight: 750; }
+.star { color: #e7a22c; }
+.status-select { max-width: 125px; height: 31px; padding: 0 9px; border: 1px solid #e5e8ef; border-radius: 8px; outline: none; color: #465166; background: #fff; font-size: 11px; font-weight: 650; }
+.status-select:focus { border-color: #857bf0; box-shadow: 0 0 0 3px #5546e812; }
+.status-select.status-new { border-color: #e8eaf0; color: #687386; background: #f8f9fb; }
+.status-select.status-site_built { border-color: #d8d3ff; color: #5043ce; background: #f4f2ff; }
+.status-select.status-pitched { border-color: #c9e6ff; color: #1764a0; background: #eef8ff; }
+.status-select.status-replied { border-color: #f3dfae; color: #916719; background: #fff9e9; }
+.status-select.status-won { border-color: #bfe8d7; color: #137350; background: #ecfbf4; }
+.status-select.status-lost { border-color: #f0d3d8; color: #a54252; background: #fff3f5; }
+.status-select.status-busy { border-color: #c9e6ff; color: #1764a0; background: #eef8ff; }
+.status-select option { color: #374155; background: #fff; }
+.generation-spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; vertical-align: -2px; animation: generation-spin .7s linear infinite; }
+@keyframes generation-spin { to { transform: rotate(360deg); } }
+.actions { display: flex; align-items: center; gap: 6px; }
+.gear-btn { width: 34px; height: 32px; padding: 0; border: 1px solid #e1e5ed; border-radius: 99px; color: #697489; background: #fff; cursor: pointer; display: inline-grid; place-items: center; transition: color .16s, border-color .16s, background .16s, transform .16s; }
+.gear-btn:hover, .gear-btn[aria-expanded="true"] { border-color: #cfcaf8; color: #5546e8; background: #f7f6ff; }
+.gear-btn:focus-visible, .row-action-menu button:focus-visible { outline: 3px solid #5546e84a; outline-offset: 2px; }
+.row-action-menu { position: fixed; z-index: 10; width: 164px; padding: 5px; border: 1px solid #e6e8ef; border-radius: 11px; background: #fff; box-shadow: 0 12px 36px #202a3a20; }
+.row-action-menu button { width: 100%; min-height: 37px; padding: 0 10px; display: flex; align-items: center; gap: 10px; border: 0; border-radius: 7px; color: #374155; background: transparent; cursor: pointer; text-align: left; font-size: 12px; font-weight: 650; }
+.row-action-menu button:hover { background: #f6f7fb; }
+.row-action-menu button.menu-delete { color: #c23f52; }
+.row-action-menu button.menu-delete:hover { background: #fff4f5; }
+.site-link { color: var(--green); }
+.pagination { padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); color: #818b9d; font-size: 11px; }
+.pagination-controls { display: flex; align-items: center; gap: 9px; }
+.pagination .btn { min-height: 33px; }
+.empty { padding: 62px 18px; color: var(--muted); text-align: center; }
+.empty-icon { margin-bottom: 12px; color: #7164eb; font-size: 30px; }
+.empty strong { display: block; margin-bottom: 6px; color: #30384b; font-family: "Manrope", sans-serif; font-size: 15px; }
+.empty p { margin: 0; font-size: 12px; }
+.toast { position: fixed; z-index: 500; bottom: 22px; left: 50%; max-width: calc(100vw - 30px); padding: 12px 17px; transform: translateX(-50%); border: 1px solid #ffffff20; border-radius: 11px; color: #fff; background: #20263a; box-shadow: 0 12px 36px #18223035; font-size: 13px; }
+.toast.error { background: #9c2c3c; }
+.modal-backdrop { position: fixed; z-index: 200; inset: 0; padding: 20px; display: grid; place-items: center; background: #15182a85; backdrop-filter: blur(5px); }
+.modal { width: min(650px, 100%); max-height: min(90vh, 760px); overflow: auto; border: 1px solid #ffffffa6; border-radius: 17px; background: #fff; box-shadow: 0 28px 90px #11182c45; }
+.modal-large { width: min(850px, 100%); }
+.modal-head { padding: 21px 23px 16px; display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 1px solid var(--line); }
+.modal-head h2 { margin: 0; color: #20263a; font-family: "Manrope", sans-serif; font-size: 18px; font-weight: 800; }
+.modal-head p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+.icon-btn { border: 0; color: #788398; background: transparent; font-size: 22px; cursor: pointer; line-height: 1; }
+.modal-form { padding: 20px 23px 23px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.form-item { display: flex; flex-direction: column; gap: 7px; }
+.form-item.full { grid-column: 1 / -1; }
+.form-item label { color: #59667a; font-size: 11px; font-weight: 750; }
+.form-item input, .form-item select, .form-item textarea { width: 100%; padding: 11px 12px; border: 1px solid #e1e5ed; border-radius: 9px; outline: none; font-size: 13px; }
+.form-item input:focus, .form-item select:focus { border-color: #857bf0; box-shadow: 0 0 0 4px #5546e814; }
+.form-item textarea { min-height: 80px; resize: vertical; }
+.modal-actions { margin-top: 22px; display: flex; justify-content: flex-end; gap: 9px; }
+.activity-list { padding: 7px 23px 22px; }
+.activity-item { position: relative; padding: 13px 0 13px 25px; border-bottom: 1px solid #eff1f5; }
+.activity-item:last-child { border-bottom: 0; }
+.activity-item:before { position: absolute; left: 2px; top: 18px; width: 9px; height: 9px; border: 2px solid #7468ec; border-radius: 50%; background: #f3f1ff; content: ""; }
+.activity-item:after { position: absolute; top: 30px; bottom: -1px; left: 6px; width: 1px; background: #e8e7f2; content: ""; }
+.activity-item:last-child:after { display: none; }
+.activity-title { color: #30384b; font-size: 12px; font-weight: 750; }
+.activity-time { margin-top: 4px; color: #8993a5; font-size: 10px; }
+.activity-detail { margin-top: 5px; color: #6f7a8f; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.role-select { padding: 5px 9px; border-radius: 7px; border: 1px solid #dcdfe6; font-size: 11px; font-weight: 700; outline: none; }
+.permission-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; background: #f0f2f5; color: #606266; margin-left: 6px; }
+
+.hidden { display: none !important; }
+@media (max-width: 900px) {
+  .wrap { padding: 32px 19px 48px; }
+  .topbar { padding: 0 20px; }
+  .list-head { align-items: flex-start; flex-direction: column; }
+  .list-tools { width: 100%; }
+  .filter { width: 100%; }
+  .location { flex: 1; min-width: 210px; }
+}
+@media (max-width: 650px) {
+  .wrap { padding: 27px 14px 40px; }
+  .topbar { height: 64px; padding: 0 15px; }
+  .brand { font-size: 15px; }
+  .wrap { padding-left: 12px; padding-right: 12px; }
+  .page-head { align-items: flex-start; flex-direction: column; margin-bottom: 21px; }
+  .page-head p { max-width: 480px; font-size: 13px; }
+  .stats { grid-template-columns: 1fr 1fr; gap: 9px; }
+  .stat:last-child { grid-column: 1 / -1; }
+  .stat { min-height: 99px; padding: 15px; border-radius: 13px; }
+  .stat-value { font-size: 25px; }
+  .search-panel { padding: 18px 15px; }
+  .search-term { flex-basis: 100%; }
+  .location { flex: 1; min-width: 0; }
+  .list-head { padding: 15px; }
+  .list-tools { flex-wrap: wrap; }
+  .filter { flex: 1 1 100%; }
+  .form-grid { grid-template-columns: 1fr; }
+  .form-item.full { grid-column: auto; }
+  .pagination { align-items: flex-start; flex-direction: column; padding: 13px 15px; }
+  .pagination-controls { width: 100%; justify-content: space-between; }
+  .pipeline-filters { padding: 12px 15px; }
+  .pipeline-filters .field { flex: 1 1 calc(50% - 9px); min-width: 0; }
+  .activity-list { padding: 7px 16px 18px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Authentication Overlay -->
+<div id="auth-wrapper" class="auth-wrapper hidden">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="brandmark" style="width:48px;height:48px;font-size:24px;">L</div>
+    </div>
+    <div class="auth-title">
+      <h1>Lead Forge</h1>
+      <p id="auth-subtitle">Sign in to access your business CRM workspace</p>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" type="button">Sign In</button>
+      <button class="auth-tab" id="tab-signup" type="button">Sign Up</button>
+    </div>
+    <form class="auth-form" id="auth-form">
+      <div>
+        <label for="auth-email">Email Address</label>
+        <input id="auth-email" type="email" placeholder="name@company.com" required autocomplete="email">
+      </div>
+      <div>
+        <label for="auth-password">Password</label>
+        <input id="auth-password" type="password" placeholder="••••••••" required minlength="6" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary auth-btn" type="submit" id="auth-submit-btn">Sign In</button>
+    </form>
+    <div class="auth-hint" id="auth-hint">Root user: <code>root@finsanta.com</code></div>
+  </div>
+</div>
+
+<!-- Main Application Header & Workspace -->
+<header class="topbar">
+  <div class="brand"><div class="brandmark">L</div><span>Lead Forge</span></div>
+  <div id="header-user-info" class="user-menu"></div>
+</header>
+
+<main class="wrap hidden" id="app-workspace">
+  <section class="page-head">
+    <div>
+      <div class="eyebrow">Lead management · Workspace</div>
+      <h1>Good work starts with a great lead.</h1>
+      <p>Discover local businesses, manage your pipeline, and turn the right opportunity into a polished website.</p>
+    </div>
+    <div class="page-head-actions">
+      <button class="btn btn-secondary hidden" id="btn-admin-users" data-action="admin-users">⚙ &nbsp;User Management</button>
+      <button class="btn btn-secondary hidden" id="btn-admin-logs" data-action="admin-logs">📋 &nbsp;System Logs</button>
+      <button class="btn btn-secondary" data-action="refresh">↻ &nbsp;Refresh leads</button>
+    </div>
+  </section>
+
+  <section class="stats" id="stats"></section>
+
+  <section class="search-panel" id="search-section">
+    <h2 class="section-title">Discover businesses <span class="permission-badge" id="search-perm-badge"></span></h2>
+    <form class="search-controls" id="search-form">
+      <input class="field search-term" name="query" placeholder="e.g. plumbers in Chennai" required>
+      <input class="field location" name="ll" placeholder="Map center @lat,lng,zoom (optional)">
+      <input class="field pages" name="pages" type="number" value="1" min="1" max="5" aria-label="Pages to scan">
+      <button class="btn btn-primary" type="submit" id="search-button">⌕ &nbsp;Find businesses</button>
+    </form>
+    <div class="section-note" id="search-note">Only adds businesses with no website, no landline number, and at least one contact method: Indian mobile or email.</div>
+  </section>
+
+  <section class="list-panel">
+    <div class="list-head">
+      <div class="list-title"><h2>Your pipeline</h2><span class="count" id="lead-count">0</span></div>
+      <div class="list-tools">
+        <input class="field filter" id="filter" placeholder="Search by business, category, or address">
+        <button class="btn btn-danger btn-small hidden" id="bulk-delete" data-action="bulk-delete">Delete selected <span id="selected-count"></span></button>
+      </div>
+    </div>
+    <div class="pipeline-filters" aria-label="Lead filters and sorting">
+      <span class="filter-caption">Filter</span>
+      <select class="field" id="status-filter" aria-label="Filter by status"><option value="">All statuses</option></select>
+      <select class="field" id="site-filter" aria-label="Filter by site status"><option value="">All sites</option><option value="ready">Site ready</option><option value="missing">No site yet</option><option value="generating">Generating</option></select>
+      <select class="field" id="contact-filter" aria-label="Filter by contact type"><option value="">Any contact</option><option value="phone">Mobile number</option><option value="email">Email</option><option value="both">Mobile + email</option><option value="none">No contact</option></select>
+      <span class="filter-caption">Sort</span>
+      <select class="field" id="sort-filter" aria-label="Sort leads"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="rating">Highest rating</option><option value="reviews">Most reviews</option><option value="name">Business name A–Z</option></select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="check-cell"><input class="check" id="select-all" type="checkbox" aria-label="Select all visible leads"></th>
+            <th>#</th><th>Business</th><th>Contact</th><th>Category</th><th>Rating</th><th>Status</th><th>Website</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="lead-rows"></tbody>
+      </table>
+    </div>
+    <nav class="pagination hidden" id="pagination" aria-label="Lead list pagination"><span id="pagination-summary" aria-live="polite"></span><div class="pagination-controls"><button class="btn btn-secondary btn-small" id="previous-page" data-action="previous-page">Previous</button><span id="pagination-current"></span><button class="btn btn-secondary btn-small" id="next-page" data-action="next-page">Next</button></div></nav>
+    <div class="empty hidden" id="empty"><div class="empty-icon">⌕</div><strong>No leads found</strong><p>Search for local businesses or adjust your filter.</p></div>
+  </section>
+</main>
+
+<div id="overlay-root"></div>
+<div id="lead-menu-root"></div>
+<div id="toast" class="toast hidden" role="status"></div>
+
+<script>
+const STATUSES=['new','site_built','pitched','replied','won','lost'];
+const STATUS_LABELS={new:'New lead',site_built:'Site ready',pitched:'Outreach sent',replied:'In conversation',won:'Won',lost:'Closed'};
+const PAGE_SIZE=10;
+const S={
+  user: null,
+  token: localStorage.getItem('token'),
+  authMode: 'login', // 'login' or 'signup'
+  leads:[],
+  selected:new Set(),
+  toastTimer:null,
+  loading:false,
+  page:1,
+  jobPollTimer:null,
+  pollingJobs:false
+};
+
+const $=s=>document.querySelector(s);
+const $$=s=>document.querySelectorAll(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+async function api(url, method='GET', body){
+  const headers = {'Content-Type': 'application/json'};
+  if (S.token) {
+    headers['Authorization'] = `Bearer ${S.token}`;
+  }
+  const response = await fetch(url, { method, headers, body: body===undefined?undefined:JSON.stringify(body) });
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error('The server returned an invalid response.');
+  }
+  if (response.status === 401) {
+    // Session expired or invalid
+    if (S.token) {
+      logout();
+    }
+    throw new Error(data.detail || 'Authentication required.');
+  }
+  if (!response.ok) {
+    throw new Error(data.detail || 'The request failed.');
+  }
+  return data;
+}
+
+function notify(message, error=false){
+  const node=$('#toast');
+  node.textContent=message;
+  node.classList.toggle('error',error);
+  node.classList.remove('hidden');
+  clearTimeout(S.toastTimer);
+  S.toastTimer=setTimeout(()=>node.classList.add('hidden'),4200);
+}
+
+// Authentication Handlers
+function updateAuthUI(){
+  if (!S.user) {
+    $('#auth-wrapper').classList.remove('hidden');
+    $('#app-workspace').classList.add('hidden');
+    $('#header-user-info').innerHTML = '';
+    return;
+  }
+  $('#auth-wrapper').classList.add('hidden');
+  $('#app-workspace').classList.remove('hidden');
+
+  // Render Header User Info
+  const roleClass = S.user.role === 'root' ? 'role-root' : (S.user.role === 'admin' ? 'role-admin' : (S.user.role === 'developer' ? 'role-developer' : 'role-editor'));
+  $('#header-user-info').innerHTML = `
+    <span class="user-email">${esc(S.user.email)}</span>
+    <span class="role-badge ${roleClass}">${esc(S.user.role)}</span>
+    <button class="btn btn-secondary btn-small" data-action="logout" title="Sign out of CRM">Logout</button>
+  `;
+
+  // Root + Admin Controls
+  const isRootOrAdmin = S.user.role === 'root' || S.user.role === 'admin';
+  $('#btn-admin-users').classList.toggle('hidden', !isRootOrAdmin);
+  $('#btn-admin-logs').classList.toggle('hidden', !isRootOrAdmin);
+
+  // Role Permissions Enforcement on Search & Inputs
+  const canSearch = isRootOrAdmin || S.user.role === 'editor';
+  const searchSection = $('#search-section');
+  if (!canSearch) {
+    $('#search-button').disabled = true;
+    $$('#search-form input').forEach(inp => inp.disabled = true);
+    $('#search-perm-badge').textContent = 'Editor / Admin role required';
+  } else {
+    $('#search-button').disabled = false;
+    $$('#search-form input').forEach(inp => inp.disabled = false);
+    $('#search-perm-badge').textContent = '';
+  }
+}
+
+function logout(){
+  if (S.token) {
+    api('/api/auth/logout', 'POST').catch(()=>{});
+  }
+  S.token = null;
+  S.user = null;
+  localStorage.removeItem('token');
+  updateAuthUI();
+}
+
+$('#tab-login').addEventListener('click', ()=>{
+  S.authMode = 'login';
+  $('#tab-login').classList.add('active');
+  $('#tab-signup').classList.remove('active');
+  $('#auth-subtitle').textContent = 'Sign in to access your business CRM workspace';
+  $('#auth-submit-btn').textContent = 'Sign In';
+});
+
+$('#tab-signup').addEventListener('click', ()=>{
+  S.authMode = 'signup';
+  $('#tab-signup').classList.add('active');
+  $('#tab-login').classList.remove('active');
+  $('#auth-subtitle').textContent = 'Create a new account (default role: Editor)';
+  $('#auth-submit-btn').textContent = 'Create Account';
+});
+
+$('#auth-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const email = $('#auth-email').value.trim();
+  const password = $('#auth-password').value;
+  const btn = $('#auth-submit-btn');
+  btn.disabled = true;
+  try {
+    const endpoint = S.authMode === 'signup' ? '/api/auth/signup' : '/api/auth/login';
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Authentication failed');
+    S.token = data.token;
+    S.user = data.user;
+    localStorage.setItem('token', S.token);
+    updateAuthUI();
+    notify(`Welcome back, ${S.user.email}!`);
+    await load();
+  } catch (err) {
+    notify(err.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// App Initialization
+async function initAuth(){
+  if (S.token) {
+    try {
+      S.user = await api('/api/auth/me');
+      updateAuthUI();
+      load();
+    } catch {
+      logout();
+    }
+  } else {
+    updateAuthUI();
+  }
+}
+
+function filteredLeads(){
+  const query=$('#filter').value.trim().toLowerCase();
+  const status=$('#status-filter').value;
+  const site=$('#site-filter').value;
+  const contact=$('#contact-filter').value;
+  const leads=S.leads.filter(l=>{
+    const matchesQuery=!query||`${l.name||''} ${l.category||''} ${l.address||''}`.toLowerCase().includes(query);
+    const matchesStatus=!status||l.status===status;
+    const matchesSite=!site||(site==='ready'&&l.site_ready)||(site==='missing'&&!l.site_ready&&!l.site_generation)||(site==='generating'&&!!l.site_generation);
+    const hasPhone=!!l.phone,hasEmail=!!l.email;
+    const matchesContact=!contact||(contact==='phone'&&hasPhone)||(contact==='email'&&hasEmail)||(contact==='both'&&hasPhone&&hasEmail)||(contact==='none'&&!hasPhone&&!hasEmail);
+    return matchesQuery&&matchesStatus&&matchesSite&&matchesContact;
+  });
+  const sort=$('#sort-filter').value;
+  return leads.sort((a,b)=>{
+    if(sort==='oldest')return String(a.created_at||'').localeCompare(String(b.created_at||''));
+    if(sort==='rating')return (Number(b.rating)||0)-(Number(a.rating)||0);
+    if(sort==='reviews')return (Number(b.reviews)||0)-(Number(a.reviews)||0);
+    if(sort==='name')return String(a.name||'').localeCompare(String(b.name||''));
+    return String(b.created_at||'').localeCompare(String(a.created_at||''));
+  });
+}
+
+async function load(){
+  if (!S.user) return;
+  try {
+    S.leads=await api('/api/leads');
+    S.selected=new Set([...S.selected].filter(id=>S.leads.some(l=>l.place_id===id)));
+    render();
+    scheduleJobPoll();
+  } catch(e) {
+    notify(e.message, true);
+  }
+}
+
+function render(){
+  const leads=filteredLeads();
+  const pageCount=Math.max(1,Math.ceil(leads.length/PAGE_SIZE));
+  S.page=Math.min(S.page,pageCount);
+  const start=(S.page-1)*PAGE_SIZE;
+  const pageLeads=leads.slice(start,start+PAGE_SIZE);
+  const built=S.leads.filter(l=>l.site_ready).length;
+  const won=S.leads.filter(l=>l.status==='won').length;
+
+  $('#stats').innerHTML=`<div class="stat"><div class="stat-label">Total leads</div><div class="stat-value">${S.leads.length}</div></div><div class="stat"><div class="stat-label">Sites generated</div><div class="stat-value">${built}</div></div><div class="stat"><div class="stat-label">Won</div><div class="stat-value">${won}</div></div>`;
+  $('#lead-count').textContent=leads.length;
+  $('#selected-count').textContent=S.selected.size?`(${S.selected.size})`:'';
+  
+  const canEdit = S.user.role === 'root' || S.user.role === 'admin' || S.user.role === 'editor';
+  const canDev = S.user.role === 'root' || S.user.role === 'admin' || S.user.role === 'developer';
+  
+  $('#bulk-delete').classList.toggle('hidden', !canEdit || S.selected.size===0);
+  $('#empty').classList.toggle('hidden',leads.length>0);
+  $('.table-wrap').classList.toggle('hidden',leads.length===0);
+
+  const pagination=$('#pagination');
+  pagination.classList.toggle('hidden',leads.length<=PAGE_SIZE);
+  $('#pagination-summary').textContent=`Showing ${start+1}–${Math.min(start+PAGE_SIZE,leads.length)} of ${leads.length} leads`;
+  $('#pagination-current').textContent=`Page ${S.page} of ${pageCount}`;
+  $('#previous-page').disabled=S.page===1;
+  $('#next-page').disabled=S.page===pageCount;
+
+  const visibleIds=pageLeads.map(l=>l.place_id);
+  const allSelected=visibleIds.length>0&&visibleIds.every(id=>S.selected.has(id));
+  const selectAll=$('#select-all');
+  selectAll.checked=allSelected;
+  selectAll.disabled = !canEdit;
+  selectAll.indeterminate=!allSelected&&visibleIds.some(id=>S.selected.has(id));
+
+  $('#lead-rows').innerHTML=pageLeads.map((l,index)=>{
+    const genDisabled = !canDev || !!l.site_generation;
+    const genTitle = !canDev ? 'Developer, Admin, or Root role required to generate site' : (l.site_generation ? 'Generation in progress' : '');
+    return `<tr>
+  <td class="check-cell"><input class="check row-check" type="checkbox" data-id="${esc(l.place_id)}" ${S.selected.has(l.place_id)?'checked':''} ${!canEdit?'disabled':''} aria-label="Select ${esc(l.name)}"></td>
+  <td class="subtle">${start+index+1}</td>
+  <td><a class="lead-name contact" title="Open ${esc(l.name)} on Google Maps" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([l.name,l.address].filter(Boolean).join(' '))}&query_place_id=${encodeURIComponent(l.place_id)}" target="_blank" rel="noopener noreferrer">${esc(l.name||'Unnamed business')}</a><div class="subtle" title="${esc(l.address)}">${esc(l.address||'Address not provided')}</div></td>
+  <td>${l.phone?`<a class="contact" href="tel:${esc(l.phone)}">${esc(l.phone)}</a>`:''}${l.email?`${l.phone?'<br>':''}<a class="contact" href="mailto:${esc(l.email)}">${esc(l.email)}</a>`:''}${!l.phone&&!l.email?'<span class="subtle">No contact</span>':''}</td>
+  <td>${esc(l.category||'—')}</td>
+  <td class="rating">${l.rating?`<span class="star">★</span> ${esc(l.rating)} <span class="subtle">(${esc(l.reviews||0)})</span>`:'—'}</td>
+  <td><select class="status-select ${l.site_generation?`status-busy`:`status-${esc(l.status)}`}" data-id="${esc(l.place_id)}" ${!canEdit?'disabled':''} aria-label="Status for ${esc(l.name)}">${STATUSES.map(status=>`<option value="${status}" ${status===l.status?'selected':''}>${esc(STATUS_LABELS[status])}</option>`).join('')}</select></td>
+  <td>${l.website?`<a class="contact" href="${esc(l.website)}" target="_blank" rel="noopener noreferrer">Existing ↗</a>`:'<span class="subtle">None</span>'}</td>
+  <td>
+    <div class="actions">
+      ${l.site_ready?`<a class="btn btn-soft btn-small site-link" href="${esc(l.site_url)}" target="_blank" rel="noopener noreferrer">↗ View site</a>${whatsappPitch(l)}`:''}
+      <button class="btn ${l.site_ready?'btn-secondary':'btn-primary'} btn-small" data-action="generate" data-id="${esc(l.place_id)}" ${genDisabled?'disabled':''} title="${genTitle}">${l.site_generation?'<span class="generation-spinner" aria-hidden="true"></span> Generating…':`✦ ${l.site_slug?'Regenerate':'Generate site'}`}</button>
+      ${l.site_generation?`<div class="generation-progress"><div class="generation-progress-label"><span>${esc(l.site_generation.stage||'Queued')}</span><span>${esc(l.site_generation.progress||0)}%</span></div><progress max="100" value="${esc(l.site_generation.progress||0)}" aria-label="Site generation progress"></progress></div>`:''}
+      <button class="gear-btn" type="button" data-action="lead-menu" data-id="${esc(l.place_id)}" aria-label="More actions for ${esc(l.name)}" aria-haspopup="menu" aria-expanded="false" title="More actions"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 2.94-.08-.03a1.7 1.7 0 0 0-1.84.49l-.05.07h-3.4l-.02-.09a1.7 1.7 0 0 0-1.38-1.36l-.09-.01-1.7-2.94.06-.06A1.7 1.7 0 0 0 9.94 14l-.08-.06v-3.4l.08-.03a1.7 1.7 0 0 0 1.2-1.5l.01-.09 2.94-1.7.06.06a1.7 1.7 0 0 0 1.88.34l.06-.06 2.94 1.7-.03.08a1.7 1.7 0 0 0 .49 1.84l.07.05v3.4l-.09.02A1.7 1.7 0 0 0 19.4 15Z"></path></svg></button>
+    </div>
+  </td>
+</tr>`;
+  }).join('');
+}
+
+function whatsappPitch(lead){
+  if(!lead.whatsapp_phone)return '<button class="btn btn-secondary btn-small" type="button" disabled title="A valid Indian mobile number is required for WhatsApp">Outreach</button>';
+  const siteUrl=lead.site_public_url||new URL(lead.site_url,location.origin).href;
+  const message=`Hi ${lead.name||'there'}, we made a website for your business. You can see it here: ${siteUrl}. If you would like this website, let us know.`;
+  return `<a class="btn btn-secondary btn-small" href="${esc(`https://wa.me/${lead.whatsapp_phone}?text=${encodeURIComponent(message)}`)}" target="_blank" rel="noopener noreferrer">Outreach</a>`;
+}
+
+function activityTitle(item){
+  return ({lead_created:'Lead added to CRM',status_changed:'Pipeline status changed',lead_updated:'Lead details updated',site_generation_queued:'Website generation queued',site_generation_started:'Website generation started',site_generation_completed:'Website published',site_generation_failed:'Website generation failed'})[item.event_type]||'Lead activity';
+}
+
+function activityDescription(item){
+  const details=item.details||{};
+  if(item.event_type==='lead_created')return 'Added from a business search.';
+  if(item.event_type==='status_changed'){const change=details.changes?.status;return change?`${STATUS_LABELS[change.from]||change.from} → ${STATUS_LABELS[change.to]||change.to}`:''}
+  if(item.event_type==='lead_updated'){const changes=details.changes||{};const labels={name:'business name',phone:'phone',email:'email',address:'address',category:'category',rating:'rating',reviews:'review count',website:'website'};return `Updated ${Object.keys(changes).map(key=>labels[key]||key).join(', ')}.`}
+  if(item.event_type==='site_generation_queued')return 'A website build was added to the background queue.';
+  if(item.event_type==='site_generation_started')return 'The background worker started building this website.';
+  if(item.event_type==='site_generation_completed')return `Published at /site/${details.slug||''}.`;
+  if(item.event_type==='site_generation_failed')return details.error||'The website build did not complete.';
+  return '';
+}
+
+async function openActivity(id){
+  const lead=S.leads.find(item=>item.place_id===id);
+  if(!lead)return;
+  $('#overlay-root').innerHTML=`<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="activity-title"><div class="modal-head"><div><h2 id="activity-title">Activity history</h2><p>${esc(lead.name||'Lead')} · Recent CRM events</p></div><button class="icon-btn" type="button" data-action="close-modal" aria-label="Close">×</button></div><div class="activity-list" aria-live="polite">Loading activity…</div></section></div>`;
+  try{
+    const activities=await api(`/api/leads/${encodeURIComponent(id)}/activity`);
+    const list=$('.activity-list');
+    if(!activities.length){list.innerHTML='<div class="empty">No activity recorded yet.</div>';return}
+    list.innerHTML=activities.map(item=>{
+      const date=new Date(`${item.created_at.replace(' ','T')}Z`);
+      const timestamp=Number.isNaN(date.getTime())?item.created_at:date.toLocaleString();
+      return `<article class="activity-item"><div class="activity-title">${esc(activityTitle(item))}</div><div class="activity-time">${esc(timestamp)}</div><div class="activity-detail">${esc(activityDescription(item))}</div></article>`;
+    }).join('');
+  }catch(error){
+    const list=$('.activity-list');
+    if(list)list.innerHTML=`<div class="empty">${esc(error.message)}</div>`;
+  }
+}
+
+// Root + Admin User Management Modal
+async function openAdminUsers(){
+  const isRootOrAdmin = S.user?.role === 'root' || S.user?.role === 'admin';
+  if (!isRootOrAdmin) return;
+  $('#overlay-root').innerHTML=`<div class="modal-backdrop">
+    <section class="modal modal-large" role="dialog" aria-modal="true" aria-labelledby="users-modal-title">
+      <div class="modal-head">
+        <div><h2 id="users-modal-title">User Management</h2><p>Manage user accounts and access levels.</p></div>
+        <button class="icon-btn" type="button" data-action="close-modal" aria-label="Close">×</button>
+      </div>
+      <div class="modal-form" id="users-list-container">Loading registered users…</div>
+    </section>
+  </div>`;
+  await _renderUserList();
+}
+
+async function _renderUserList(){
+  const container = $('#users-list-container');
+  if (!container) return;
+  try {
+    const users = await api('/api/admin/users');
+    const isRoot = S.user?.role === 'root';
+    container.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Registered At</th>
+              <th>Change Role</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${users.map(u => {
+              const isSelf = u.id === S.user?.id;
+              const isRootTarget = u.role === 'root';
+              const isAdminTarget = u.role === 'admin';
+              // Who can change this user's role?
+              const canChangeRole = !isSelf && !isRootTarget && (isRoot || !isAdminTarget);
+              // Who can edit/delete this user?
+              const canEdit = !isSelf && !isRootTarget && (isRoot || !isAdminTarget);
+              const canDelete = !isSelf && !isRootTarget && (isRoot || !isAdminTarget);
+              const roleClass = u.role === 'root' ? 'role-root' : (u.role === 'admin' ? 'role-admin' : (u.role === 'developer' ? 'role-developer' : 'role-editor'));
+              const reasonDisabled = isSelf ? 'Your own account' : (isRootTarget ? 'Root is protected' : (isAdminTarget && !isRoot ? 'Only root can modify admins' : ''));
+              return `
+              <tr>
+                <td style="font-weight:700;">${esc(u.email)} ${isSelf ? '<span class="permission-badge">You</span>' : ''}</td>
+                <td><span class="role-badge ${roleClass}">${esc(u.role)}</span></td>
+                <td class="subtle">${esc(u.created_at)}</td>
+                <td>
+                  ${canChangeRole ? `
+                    <select class="role-select" data-user-id="${esc(u.id)}">
+                      <option value="editor" ${u.role==='editor'?'selected':''}>Editor</option>
+                      <option value="developer" ${u.role==='developer'?'selected':''}>Developer</option>
+                      ${isRoot ? `<option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>` : ''}
+                    </select>
+                  ` : `
+                    <select class="role-select" disabled title="${esc(reasonDisabled)}">
+                      <option selected>${esc(u.role.charAt(0).toUpperCase()+u.role.slice(1))}</option>
+                    </select>
+                    <span class="subtle" style="display:block;font-size:10px;margin-top:2px;">${esc(reasonDisabled)}</span>
+                  `}
+                </td>
+                <td>
+                  <div class="actions">
+                    ${canEdit ? `<button class="btn btn-soft btn-small" data-action="edit-user" data-id="${esc(u.id)}" data-email="${esc(u.email)}">Edit</button>` : ''}
+                    ${canDelete ? `<button class="btn btn-danger btn-small" data-action="delete-user" data-id="${esc(u.id)}" data-email="${esc(u.email)}">Delete</button>` : ''}
+                    ${!canEdit && !canDelete ? '<span class="subtle">—</span>' : ''}
+                  </div>
+                </td>
+              </tr>
+            `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (err) {
+    if (container) container.innerHTML = `<div class="empty">${esc(err.message)}</div>`;
+  }
+}
+
+function openEditUserModal(userId, email) {
+  $('#overlay-root').innerHTML=`<div class="modal-backdrop">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-user-title">
+      <div class="modal-head">
+        <div><h2 id="edit-user-title">Edit User</h2><p>Update account credentials.</p></div>
+        <button class="icon-btn" type="button" data-action="close-modal" aria-label="Close">×</button>
+      </div>
+      <form class="modal-form" id="edit-user-form" data-id="${esc(userId)}">
+        <div class="form-item">
+          <label for="edit-user-email">Email</label>
+          <input id="edit-user-email" name="email" type="email" maxlength="320" value="${esc(email)}" placeholder="New email address">
+        </div>
+        <div class="form-item">
+          <label for="edit-user-password">New Password <span style="font-weight:400;color:#9aa4b7;">(leave blank to keep current)</span></label>
+          <input id="edit-user-password" name="password" type="password" minlength="6" maxlength="100" placeholder="••••••••">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-action="back-to-users">Back</button>
+          <button type="submit" class="btn btn-primary">Save changes</button>
+        </div>
+      </form>
+    </section>
+  </div>`;
+  $('#edit-user-email').focus();
+}
+
+async function openAdminLogs(){
+  if (S.user?.role !== 'root') return;
+  $('#overlay-root').innerHTML=`<div class="modal-backdrop">
+    <section class="modal modal-large" role="dialog" aria-modal="true" aria-labelledby="logs-modal-title">
+      <div class="modal-head">
+        <div><h2 id="logs-modal-title">System Activity Audit Logs</h2><p>Detailed log of all user authentication and actions.</p></div>
+        <button class="icon-btn" type="button" data-action="close-modal" aria-label="Close">×</button>
+      </div>
+      <div class="modal-form" id="logs-list-container">Loading activity audit logs…</div>
+    </section>
+  </div>`;
+  try {
+    const logs = await api('/api/admin/activity-logs');
+    const container = $('#logs-list-container');
+    if (!logs.length) {
+      container.innerHTML = `<div class="empty">No system audit logs found.</div>`;
+      return;
+    }
+    container.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>User</th>
+              <th>Action</th>
+              <th>Details</th>
+              <th>IP Address</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${logs.map(log => `
+              <tr>
+                <td class="subtle">${esc(log.created_at)}</td>
+                <td style="font-weight:700;">${esc(log.user_email || 'Anonymous')}</td>
+                <td><span class="count">${esc(log.action)}</span></td>
+                <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; font-size:11px;">${esc(JSON.stringify(log.details))}</td>
+                <td class="subtle">${esc(log.ip_address || '—')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (err) {
+    $('#logs-list-container').innerHTML = `<div class="empty">${esc(err.message)}</div>`;
+  }
+}
+
+function scheduleJobPoll(){
+  clearTimeout(S.jobPollTimer);
+  if(S.leads.some(lead=>lead.site_generation))S.jobPollTimer=setTimeout(pollSiteJobs,1200);
+}
+
+async function pollSiteJobs(){
+  if(S.pollingJobs)return;
+  S.pollingJobs=true;
+  try{
+    const active=S.leads.filter(lead=>lead.site_generation);
+    const results=await Promise.all(active.map(async lead=>({lead,result:await api(`/api/site-jobs/${encodeURIComponent(lead.site_generation.job_id)}`)})));
+    let changed=false;
+    for(const {lead,result} of results){
+      if(result.status==='completed'){notify(`Website published for ${lead.name}.`);changed=true}
+      else if(result.status==='failed'){notify(`Website generation failed for ${lead.name}: ${result.error||'Unknown error'}`,true);changed=true}
+      else{lead.site_generation={job_id:result.job_id,status:result.status,stage:result.stage,progress:result.progress}}
+    }
+    if(changed){await load();return}
+    render();
+  }catch(error){
+    notify(`Could not check website generation status: ${error.message}`,true);
+  }finally{
+    S.pollingJobs=false;
+    scheduleJobPoll();
+  }
+}
+
+function closeLeadMenu(){
+  const root=$('#lead-menu-root');
+  root.innerHTML='';
+  document.querySelectorAll('.gear-btn[aria-expanded="true"]').forEach(button=>button.setAttribute('aria-expanded','false'));
+}
+
+function toggleLeadMenu(button,id){
+  const root=$('#lead-menu-root');
+  if(button.getAttribute('aria-expanded')==='true'){closeLeadMenu();return}
+  closeLeadMenu();
+  const canEdit = S.user.role === 'root' || S.user.role === 'admin' || S.user.role === 'editor';
+  const menu=document.createElement('div');
+  menu.className='row-action-menu';
+  menu.setAttribute('role','menu');
+  menu.innerHTML=`
+    ${canEdit ? `<button type="button" role="menuitem" data-action="edit" data-id="${esc(id)}"><span aria-hidden="true">✎</span> Edit details</button>` : ''}
+    <button type="button" role="menuitem" data-action="activity" data-id="${esc(id)}"><span aria-hidden="true">◷</span> Activity history</button>
+    ${canEdit ? `<button type="button" role="menuitem" class="menu-delete" data-action="delete" data-id="${esc(id)}"><span aria-hidden="true">⌫</span> Delete lead</button>` : ''}
+  `;
+  root.append(menu);
+  button.setAttribute('aria-expanded','true');
+  const rect=button.getBoundingClientRect();
+  const width=164;
+  const height=menu.offsetHeight;
+  const left=Math.max(8,Math.min(rect.right-width,window.innerWidth-width-8));
+  const top=rect.bottom+height+8>window.innerHeight?Math.max(8,rect.top-height-6):rect.bottom+6;
+  menu.style.left=`${left}px`;
+  menu.style.top=`${top}px`;
+}
+
+document.addEventListener('click',async event=>{
+  const button=event.target.closest('[data-action]');
+  if(!button){if(!event.target.closest('.row-action-menu'))closeLeadMenu();return}
+  const action=button.dataset.action;
+  const id=button.dataset.id;
+  if(action==='logout'){logout();return}
+  if(action==='admin-users'){await openAdminUsers();return}
+  if(action==='admin-logs'){await openAdminLogs();return}
+  if(action==='lead-menu'){toggleLeadMenu(button,id);return}
+  if(action==='refresh')await load();
+  if(action==='previous-page'&&S.page>1){S.page--;render()}
+  if(action==='next-page'&&S.page<Math.ceil(filteredLeads().length/PAGE_SIZE)){S.page++;render()}
+  if(action==='edit'){closeLeadMenu();openEditor(S.leads.find(l=>l.place_id===id))}
+  if(action==='activity'){closeLeadMenu();await openActivity(id)}
+  if(action==='delete'){closeLeadMenu();await removeLeads([id])}
+  if(action==='bulk-delete')await removeLeads([...S.selected]);
+  if(action==='generate')await generateSite(id,button);
+  if(action==='close-modal')$('#overlay-root').innerHTML='';
+  if(action==='back-to-users'){await openAdminUsers();return}
+  if(action==='edit-user'){
+    const email=button.dataset.email;
+    openEditUserModal(id,email);
+    return;
+  }
+  if(action==='delete-user'){
+    const email=button.dataset.email;
+    if(!confirm(`Delete user "${email}"? This cannot be undone.`))return;
+    try{
+      await api(`/api/admin/users/${encodeURIComponent(id)}`,'DELETE');
+      notify(`User ${email} deleted.`);
+      await openAdminUsers();
+    }catch(e){
+      notify(e.message,true);
+    }
+    return;
+  }
+});
+
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closeLeadMenu()});
+window.addEventListener('resize',closeLeadMenu);
+window.addEventListener('scroll',closeLeadMenu,true);
+
+document.addEventListener('change',async event=>{
+  const target=event.target;
+  if(target.id==='select-all'){
+    const start=(S.page-1)*PAGE_SIZE;
+    for(const lead of filteredLeads().slice(start,start+PAGE_SIZE))
+      target.checked?S.selected.add(lead.place_id):S.selected.delete(lead.place_id);
+    render();
+  }
+  if(target.matches('.row-check')){
+    target.checked?S.selected.add(target.dataset.id):S.selected.delete(target.dataset.id);
+    render();
+  }
+  if(target.matches('.status-select')){
+    try{
+      await api(`/api/leads/${encodeURIComponent(target.dataset.id)}`,'PATCH',{status:target.value});
+      await load();
+      notify('Lead status updated.');
+    }catch(e){
+      notify(e.message,true);
+      await load();
+    }
+  }
+  if(target.matches('.role-select')){
+    const userId = target.dataset.userId;
+    const newRole = target.value;
+    try {
+      await api(`/api/admin/users/${encodeURIComponent(userId)}/role`, 'PATCH', { role: newRole });
+      notify('User role updated successfully.');
+      await _renderUserList();
+    } catch (e) {
+      notify(e.message, true);
+      await _renderUserList();
+    }
+  }
+  if(target.matches('#status-filter,#site-filter,#contact-filter,#sort-filter')){S.page=1;render()}
+});
+
+$('#filter').addEventListener('input',()=>{S.page=1;render()});
+$('#status-filter').insertAdjacentHTML('beforeend',STATUSES.map(status=>`<option value="${status}">${esc(STATUS_LABELS[status])}</option>`).join(''));
+
+$('#search-form').addEventListener('submit',async event=>{
+  event.preventDefault();
+  if(S.loading)return;
+  const form=new FormData(event.currentTarget);
+  const button=$('#search-button');
+  const note=$('#search-note');
+  S.loading=true;
+  button.disabled=true;
+  button.textContent='Searching…';
+  note.textContent='Searching Google Maps for businesses without a website…';
+  try{
+    const result=await api('/api/search','POST',{query:form.get('query'),ll:form.get('ll')||null,pages:Number(form.get('pages'))});
+    S.page=1;
+    await load();
+    note.textContent=`Scanned ${result.scanned} businesses · ${result.found} without websites · ${result.added} new leads added.`;
+  }
+  catch(e){
+    note.textContent=e.message;
+    notify(e.message,true);
+  }finally{
+    S.loading=false;
+    button.disabled=false;
+    button.innerHTML='⌕ &nbsp;Find businesses';
+  }
+});
+
+function openEditor(lead){
+  if(!lead)return;
+  $('#overlay-root').innerHTML=`<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-title"><div class="modal-head"><div><h2 id="edit-title">Edit lead details</h2><p>Update business information in your CRM.</p></div><button class="icon-btn" type="button" data-action="close-modal" aria-label="Close">×</button></div>
+  <form class="modal-form" id="edit-form" data-id="${esc(lead.place_id)}"><div class="form-grid">
+  <div class="form-item"><label for="edit-name">Business name</label><input id="edit-name" name="name" required maxlength="200" value="${esc(lead.name)}"></div>
+  <div class="form-item"><label for="edit-phone">Phone</label><input id="edit-phone" name="phone" maxlength="100" value="${esc(lead.phone)}"></div>
+  <div class="form-item"><label for="edit-email">Email</label><input id="edit-email" name="email" type="email" maxlength="320" value="${esc(lead.email)}"></div>
+  <div class="form-item"><label for="edit-category">Category</label><input id="edit-category" name="category" maxlength="200" value="${esc(lead.category)}"></div>
+  <div class="form-item"><label for="edit-website">Website</label><input id="edit-website" name="website" type="url" maxlength="2000" value="${esc(lead.website)}"></div>
+  <div class="form-item"><label for="edit-rating">Rating (0–5)</label><input id="edit-rating" name="rating" type="number" min="0" max="5" step="0.1" value="${esc(lead.rating)}"></div>
+  <div class="form-item"><label for="edit-reviews">Reviews</label><input id="edit-reviews" name="reviews" type="number" min="0" step="1" value="${esc(lead.reviews)}"></div>
+  <div class="form-item full"><label for="edit-address">Address</label><textarea id="edit-address" name="address" maxlength="500">${esc(lead.address)}</textarea></div>
+  <div class="form-item"><label for="edit-status">Pipeline status</label><select id="edit-status" name="status">${STATUSES.map(status=>`<option value="${status}" ${status===lead.status?'selected':''}>${esc(STATUS_LABELS[status])}</option>`).join('')}</select></div>
+  </div><div class="modal-actions"><button type="button" class="btn btn-secondary" data-action="close-modal">Cancel</button><button type="submit" class="btn btn-primary">Save changes</button></div></form></section></div>`;
+  $('#edit-name').focus();
+}
+
+$('#overlay-root').addEventListener('click',event=>{if(event.target.classList.contains('modal-backdrop'))$('#overlay-root').innerHTML=''});
+
+$('#overlay-root').addEventListener('submit',async event=>{
+  if(event.target.id==='edit-user-form'){
+    event.preventDefault();
+    const form=event.target;
+    const fields=new FormData(form);
+    const email=fields.get('email')?.trim()||null;
+    const password=fields.get('password')||null;
+    const body={};
+    if(email)body.email=email;
+    if(password)body.password=password;
+    if(!email&&!password){notify('No changes to save.',true);return;}
+    const btn=form.querySelector('[type="submit"]');
+    btn.disabled=true;
+    try{
+      await api(`/api/admin/users/${encodeURIComponent(form.dataset.id)}`,'PATCH',body);
+      notify('User updated successfully.');
+      await openAdminUsers();
+    }catch(e){
+      notify(e.message,true);
+      btn.disabled=false;
+    }
+    return;
+  }
+  if(event.target.id!=='edit-form')return;
+  event.preventDefault();
+  const form=event.target;
+  const fields=new FormData(form);
+  const body={};
+  for(const key of ['name','phone','email','category','website','address','status'])body[key]=fields.get(key)||null;
+  for(const key of ['rating','reviews'])body[key]=fields.get(key)===''?null:Number(fields.get(key));
+  const button=form.querySelector('[type="submit"]');
+  button.disabled=true;
+  try{
+    await api(`/api/leads/${encodeURIComponent(form.dataset.id)}`,'PATCH',body);
+    $('#overlay-root').innerHTML='';
+    await load();
+    notify('Lead details saved.');
+  }catch(e){
+    notify(e.message,true);
+    button.disabled=false;
+  }
+});
+
+async function removeLeads(ids){
+  if(!ids.length)return;
+  const message=ids.length===1?'Delete this lead? Its generated static site will also be removed.':`Delete ${ids.length} selected leads? Their generated static sites will also be removed.`;
+  if(!confirm(message))return;
+  try{
+    for(const id of ids)await api(`/api/leads/${encodeURIComponent(id)}`,'DELETE');
+    S.selected.clear();
+    await load();
+    notify(`${ids.length} lead${ids.length===1?'':'s'} deleted.`);
+  }catch(e){
+    notify(e.message,true);
+    await load();
+  }
+}
+
+async function generateSite(id,button){
+  button.disabled=true;
+  try{
+    const job=await api(`/api/leads/${encodeURIComponent(id)}/site`,'POST');
+    const lead=S.leads.find(item=>item.place_id===id);
+    if(lead)lead.site_generation={job_id:job.job_id,status:job.status,stage:'Queued',progress:0};
+    render();
+    scheduleJobPoll();
+    await load();
+    notify('Site generation started in the background. You can keep working; this lead will update when it is ready.');
+  }catch(e){
+    notify(e.message,true);
+    button.disabled=false;
+  }
+}
+
+initAuth();
+</script>
+</body>
+</html>

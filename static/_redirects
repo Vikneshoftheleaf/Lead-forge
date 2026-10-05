@@ -1,0 +1,4 @@
+# Cloudflare Pages Redirects & Reverse Proxy
+# If proxying API calls to a backend server or worker:
+# /api/*  https://api.yourdomain.com/api/:splat  200
+# /site/* https://api.yourdomain.com/site/:splat 200
