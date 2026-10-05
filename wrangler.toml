@@ -1,9 +1,12 @@
 name = "lead-forge"
+main = "src/worker.js"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
-# Cloudflare Pages static build output directory
-pages_build_output_dir = "static"
+# Static Assets (CRM frontend UI)
+[assets]
+directory = "./static"
+binding = "ASSETS"
 
 # Cloudflare D1 Database Binding
 [[d1_databases]]
