@@ -192,19 +192,44 @@ test("provisioned account can sign in without bootstrap secrets", async () => {
   ]);
 });
 
-test("public signup is disabled", async () => {
+test("public signup creates an editor account and starts a session", async () => {
+  const statements = [];
   const response = await worker.fetch(
     new Request("https://lead-forge.example/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: "new@example.com", password: "long-password" }),
+      body: JSON.stringify({ email: "New.User@Example.com", password: "long-password" }),
     }),
-    {},
+    {
+      DB: {
+        prepare(sql) {
+          return {
+            bind(...params) {
+              return {
+                first: async () => null,
+                run: async () => {
+                  statements.push({ sql, params });
+                  return { meta: { changes: 1 } };
+                },
+              };
+            },
+          };
+        },
+      },
+    },
   );
-  assert.equal(response.status, 403);
-  assert.deepEqual(await response.json(), {
-    detail: "Public sign-up is disabled. Use an account provisioned by the administrator.",
-  });
+  assert.equal(response.status, 200);
+  const payload = await response.json();
+  assert.equal(payload.user.email, "new.user@example.com");
+  assert.equal(payload.user.role, "editor");
+  assert.ok(payload.token);
+  const userInsert = statements.find((statement) => statement.sql.includes("INSERT INTO users"));
+  assert.ok(userInsert);
+  assert.equal(userInsert.params[1], "new.user@example.com");
+  assert.equal(userInsert.params[4], undefined);
+  assert.match(userInsert.sql, /VALUES \(\?, \?, \?, \?, 'editor'\)/);
+  assert.ok(statements.some((statement) => statement.sql.includes("INSERT INTO sessions")));
+  assert.ok(statements.some((statement) => statement.sql.includes("INSERT INTO audit_logs")));
 });
 
 test("websites API is available to every logged-in role except editors", async () => {

@@ -65,7 +65,7 @@ To use a custom domain, attach it to the `lead-forge` Worker from **Cloudflare D
 - Published sites are served at `/site/{slug}`; photo assets are served at `/site-assets/{slug}/{filename}`.
 - The `Websites` tab and its HTML read/write endpoints are protected to root, admin, and developer roles. Editor users cannot access those endpoints.
 - HTML responses are revalidated so a direct HTML edit is reflected without regenerating a site. Photo assets remain immutable and cacheable.
-- Four fixed-role accounts are provisioned directly in D1, separately from application startup and deployments: `root@finsanta.com`, `editor@finsanta.com`, `developer@finsanta.com`, and `admin@finsanta.com`. Passwords exist only as salted PBKDF2 hashes in D1; they are not stored in `.env`, GitHub Actions, or Worker secrets. Deployments never clear users or sessions. Public sign-up is disabled.
+- Four fixed-role accounts are provisioned directly in D1, separately from application startup and deployments: `root@finsanta.com`, `editor@finsanta.com`, `developer@finsanta.com`, and `admin@finsanta.com`. Passwords exist only as salted PBKDF2 hashes in D1; they are not stored in `.env`, GitHub Actions, or Worker secrets. Deployments never clear users or sessions. Public sign-up is enabled and always creates an `editor`; it cannot assign admin, developer, or root roles.
 
 ## Local Worker development
 

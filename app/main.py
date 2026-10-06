@@ -172,8 +172,15 @@ def require_roles(*allowed_roles: str):
 
 # Auth Endpoints
 @app.post("/api/auth/signup")
-def signup():
-    raise HTTPException(403, "Public sign-up is disabled. Use an account provisioned by the administrator.")
+def signup(req: AuthReq, request: Request):
+    try:
+        user = db.create_user(req.email, req.password, role="editor")
+    except ValueError as error:
+        raise HTTPException(400, str(error)) from error
+    token = db.create_session(user["id"])
+    ip = request.client.host if request.client else None
+    db.record_audit_log(user["id"], user["email"], "user_signup", {"role": user["role"]}, ip)
+    return {"token": token, "user": user}
 
 @app.post("/api/auth/login")
 def login(req: AuthReq, request: Request):

@@ -1,6 +1,7 @@
 import {
   all,
   authenticateUser,
+  createUser,
   createSession,
   first,
   getSessionUser,
@@ -408,7 +409,20 @@ async function dispatchApi(request, env) {
   }
 
   if (method === "POST" && pathname === "/api/auth/signup") {
-    fail(403, "Public sign-up is disabled. Use an account provisioned by the administrator.");
+    const input = await readJson(request);
+    const email = requireString(input.email, "email", { min: 3, max: 320 }).toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail(422, "Enter a valid email address.");
+    const password = requireString(input.password, "password", { min: 6, max: 256 });
+    let user;
+    try {
+      user = await createUser(env, email, password);
+    } catch (error) {
+      if (/already registered/i.test(error.message)) fail(400, error.message);
+      throw error;
+    }
+    const token = await createSession(env, user.id);
+    await audit(env, user, "user_signup", { role: user.role }, request);
+    return response({ token, user });
   }
 
   if (method === "POST" && pathname === "/api/auth/login") {

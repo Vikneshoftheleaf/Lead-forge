@@ -4,7 +4,7 @@ Find Google Maps businesses with no website, manage them in a CRM, and generate 
 
 ## Deploy to Cloudflare Workers
 
-The Cloudflare deployment runs the CRM, API, and generated-site hosting from a single Worker, using D1 for application data, R2 for published sites, and a Queue for background website generation. Pushes to `main` run tests, apply database migrations, publish the Worker and static assets, and synchronize Worker runtime settings through GitHub Actions. The four fixed-role accounts are provisioned directly in D1, separately from deployments; public sign-up is disabled. Follow [DEPLOYMENT.md](./DEPLOYMENT.md) for setup.
+The Cloudflare deployment runs the CRM, API, and generated-site hosting from a single Worker, using D1 for application data, R2 for published sites, and a Queue for background website generation. Pushes to `main` run tests, apply database migrations, publish the Worker and static assets, and synchronize Worker runtime settings through GitHub Actions. The four fixed-role accounts are provisioned directly in D1, separately from deployments; public sign-up creates editor accounts only. Follow [DEPLOYMENT.md](./DEPLOYMENT.md) for setup.
 
 ## Run
 ```bash

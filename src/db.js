@@ -71,6 +71,36 @@ async function passwordHash(password, salt) {
   );
 }
 
+export async function createUser(env, email, password) {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (await first(env, "SELECT id FROM users WHERE lower(email) = ?", normalizedEmail)) {
+    throw new Error("Email already registered.");
+  }
+  const salt = toHex(crypto.getRandomValues(new Uint8Array(16)));
+  const user = {
+    id: crypto.randomUUID(),
+    email: normalizedEmail,
+    role: "editor",
+  };
+  try {
+    await run(
+      env,
+      `INSERT INTO users(id, email, password_hash, salt, role)
+       VALUES (?, ?, ?, ?, 'editor')`,
+      user.id,
+      user.email,
+      toHex(await passwordHash(password, salt)),
+      salt,
+    );
+  } catch (error) {
+    if (await first(env, "SELECT id FROM users WHERE lower(email) = ?", normalizedEmail)) {
+      throw new Error("Email already registered.");
+    }
+    throw error;
+  }
+  return user;
+}
+
 export async function authenticateUser(env, email, password) {
   const user = await first(
     env,

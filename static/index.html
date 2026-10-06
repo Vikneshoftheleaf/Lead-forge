@@ -75,6 +75,9 @@ button, input, select, textarea { font: inherit; }
 .auth-title { text-align: center; margin-bottom: 26px; }
 .auth-title h1 { margin: 6px 0 4px; font-family: "Manrope", sans-serif; font-size: 26px; font-weight: 800; color: #fff; letter-spacing: -.6px; }
 .auth-title p { margin: 0; color: #9aa4b7; font-size: 13px; line-height: 1.5; }
+.auth-tabs { display: flex; gap: 6px; margin-bottom: 22px; background: #ffffff0e; padding: 5px; border-radius: 12px; }
+.auth-tab { flex: 1; padding: 10px; border: 0; background: transparent; color: #a4adbe; font-weight: 700; font-size: 13px; border-radius: 8px; cursor: pointer; transition: all .2s; }
+.auth-tab.active { background: #5546e8; color: #fff; box-shadow: 0 4px 14px #5546e844; }
 .auth-form { display: flex; flex-direction: column; gap: 16px; }
 .auth-form label { font-size: 12px; font-weight: 750; color: #c4c8d6; margin-bottom: 5px; display: block; }
 .auth-form input { width: 100%; padding: 12px 14px; border: 1px solid #ffffff1f; border-radius: 10px; background: #ffffff0d; color: #fff; outline: none; font-size: 14px; transition: border-color .18s; }
@@ -295,6 +298,10 @@ tbody tr:hover { background: #fafaff; }
       <h1>Lead Forge</h1>
       <p id="auth-subtitle">Sign in to access your business CRM workspace</p>
     </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" type="button">Sign In</button>
+      <button class="auth-tab" id="tab-signup" type="button">Sign Up</button>
+    </div>
     <form class="auth-form" id="auth-form">
       <div>
         <label for="auth-email">Email Address</label>
@@ -421,6 +428,7 @@ const PAGE_SIZE=10;
 const S={
   user: null,
   token: localStorage.getItem('token'),
+  authMode: 'login',
   leads:[],
   websites:[],
   currentSite:null,
@@ -581,6 +589,24 @@ $('#auth-password-toggle').addEventListener('click', ()=>{
   $('#auth-password-toggle').setAttribute('aria-pressed', String(visible));
 });
 
+$('#tab-login').addEventListener('click', ()=>{
+  S.authMode = 'login';
+  $('#tab-login').classList.add('active');
+  $('#tab-signup').classList.remove('active');
+  $('#auth-subtitle').textContent = 'Sign in to access your business CRM workspace';
+  $('#auth-submit-btn').textContent = 'Sign In';
+  $('#auth-password').autocomplete = 'current-password';
+});
+
+$('#tab-signup').addEventListener('click', ()=>{
+  S.authMode = 'signup';
+  $('#tab-signup').classList.add('active');
+  $('#tab-login').classList.remove('active');
+  $('#auth-subtitle').textContent = 'Create a new account (default role: Editor)';
+  $('#auth-submit-btn').textContent = 'Create Account';
+  $('#auth-password').autocomplete = 'new-password';
+});
+
 $('#auth-form').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const email = $('#auth-email').value.trim();
@@ -588,7 +614,8 @@ $('#auth-form').addEventListener('submit', async (e)=>{
   const btn = $('#auth-submit-btn');
   btn.disabled = true;
   try {
-    const res = await fetch('/api/auth/login', {
+    const endpoint = S.authMode === 'signup' ? '/api/auth/signup' : '/api/auth/login';
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ email, password })
