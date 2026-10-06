@@ -702,7 +702,13 @@ export async function handleApi(request, env) {
     return response({ detail: "API route not found." }, 404);
   } catch (error) {
     if (error instanceof ApiError) return response({ detail: error.message }, error.status);
-    console.error("Worker API request failed", error);
+    if (error?.code === "ROOT_BOOTSTRAP_CONFIG") {
+      return response({ detail: error.message }, 503);
+    }
+    console.error("Worker API request failed", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return response({ detail: "Internal server error." }, 500);
   }
 }

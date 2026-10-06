@@ -75,6 +75,54 @@ test("site management API rejects unauthenticated requests", async () => {
   assert.deepEqual(await response.json(), { detail: "Not authenticated." });
 });
 
+test("auth works without bootstrap secrets after a root user exists", async () => {
+  const response = await worker.fetch(
+    new Request("https://lead-forge.example/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "root@example.com", password: "wrong-password" }),
+    }),
+    {
+      DB: {
+        prepare(sql) {
+          return {
+            bind() {
+              return {
+                first: async () => sql.includes("WHERE role = 'root'")
+                  ? { id: "root-id" }
+                  : null,
+              };
+            },
+          };
+        },
+      },
+    },
+  );
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), { detail: "Invalid email or password." });
+});
+
+test("auth reports missing bootstrap secrets if no root exists", async () => {
+  const response = await worker.fetch(
+    new Request("https://lead-forge.example/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "root@example.com", password: "password123" }),
+    }),
+    {
+      DB: {
+        prepare() {
+          return { bind() { return { first: async () => null }; } };
+        },
+      },
+    },
+  );
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), {
+    detail: "ROOT_EMAIL and ROOT_PASSWORD Worker secrets are required to create the initial root user.",
+  });
+});
+
 test("websites API is available to every logged-in role except editors", async () => {
   for (const role of ["editor", "developer", "admin", "root"]) {
     const response = await worker.fetch(

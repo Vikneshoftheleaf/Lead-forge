@@ -75,7 +75,16 @@ export async function ensureRootUser(env) {
   const email = String(env.ROOT_EMAIL || "").trim().toLowerCase();
   const password = String(env.ROOT_PASSWORD || "");
   if (!email || !password) {
-    throw new Error("Set ROOT_EMAIL and ROOT_PASSWORD Worker secrets before using authentication.");
+    const rootUser = await first(
+      env,
+      "SELECT id FROM users WHERE role = 'root' LIMIT 1",
+    );
+    if (rootUser) return;
+    const error = new Error(
+      "ROOT_EMAIL and ROOT_PASSWORD Worker secrets are required to create the initial root user.",
+    );
+    error.code = "ROOT_BOOTSTRAP_CONFIG";
+    throw error;
   }
 
   const existing = await first(env, "SELECT id FROM users WHERE lower(email) = ?", email);
