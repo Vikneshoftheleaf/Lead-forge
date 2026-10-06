@@ -124,6 +124,10 @@ def create_schema():
             id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT,
             user_email TEXT, action TEXT NOT NULL, details TEXT,
             ip_address TEXT, created_at TEXT DEFAULT (datetime('now')))""",
+
+        """CREATE TABLE IF NOT EXISTS app_settings(
+            key TEXT PRIMARY KEY, value TEXT NOT NULL,
+            updated_at TEXT DEFAULT (datetime('now')))""",
     ]
     for i, sql in enumerate(ddl, 1):
         name = sql.strip().split()[2]  # TABLE/INDEX name
@@ -163,25 +167,13 @@ def insert_rows(table: str, rows: list[dict]):
     print(f"  {table}: {len(rows)} rows processed -- inserted={ok}, ignored={skipped}    ", flush=True)
 
 
-def ensure_root():
-    root_email = "root@finsanta.com"
-    row_list = []
-    try:
-        resp = requests.post(
-            CF_URL, headers=CF_HEADERS,
-            json={"sql": "SELECT role FROM users WHERE lower(email)=?", "params": [root_email]},
-            timeout=20
-        )
-        data = resp.json()
-        row_list = (data.get("result") or [{}])[0].get("results") or []
-    except Exception:
-        pass
+def ensure_default_accounts():
+    from app import db
 
-    if row_list:
-        d1_exec("UPDATE users SET role='root' WHERE lower(email)=?", [root_email])
-        print(f"  Root user role confirmed.", flush=True)
+    if db.ensure_default_accounts():
+        print("  Replaced legacy users with the four configured role accounts.", flush=True)
     else:
-        print(f"  WARNING: root@finsanta.com not found in D1 users. Run the app once to seed it.", flush=True)
+        print("  Fixed-role accounts were already provisioned; no user changes made.", flush=True)
 
 
 def main():
@@ -207,8 +199,8 @@ def main():
             print(f"\n  ERROR on table '{table}': {exc}", file=sys.stderr, flush=True)
     print("", flush=True)
 
-    print("[3/3] Verifying root user...", flush=True)
-    ensure_root()
+    print("[3/3] Provisioning fixed-role accounts...", flush=True)
+    ensure_default_accounts()
     print("", flush=True)
 
     print("Migration complete.", flush=True)

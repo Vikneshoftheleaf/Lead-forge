@@ -64,56 +64,75 @@ async function passwordHash(password, salt) {
   );
   return new Uint8Array(
     await crypto.subtle.deriveBits(
-      { name: "PBKDF2", hash: "SHA-256", salt, iterations: PASSWORD_ITERATIONS },
+      { name: "PBKDF2", hash: "SHA-256", salt: encoder.encode(salt), iterations: PASSWORD_ITERATIONS },
       material,
       256,
     ),
   );
 }
 
-export async function ensureRootUser(env) {
-  const email = String(env.ROOT_EMAIL || "").trim().toLowerCase();
-  const password = String(env.ROOT_PASSWORD || "");
-  if (!email || !password) {
-    const rootUser = await first(
-      env,
-      "SELECT id FROM users WHERE role = 'root' LIMIT 1",
-    );
-    if (rootUser) return;
-    const error = new Error(
-      "ROOT_EMAIL and ROOT_PASSWORD Worker secrets are required to create the initial root user.",
-    );
-    error.code = "ROOT_BOOTSTRAP_CONFIG";
-    throw error;
-  }
+const ACCOUNT_BOOTSTRAP_KEY = "role_accounts_v1";
+const DEFAULT_ACCOUNTS = [
+  ["root@finsanta.com", "root", "ROOT_PASSWORD"],
+  ["editor@finsanta.com", "editor", "EDITOR_PASSWORD"],
+  ["developer@finsanta.com", "developer", "DEVELOPER_PASSWORD"],
+  ["admin@finsanta.com", "admin", "ADMIN_PASSWORD"],
+];
 
-  const existing = await first(env, "SELECT id FROM users WHERE lower(email) = ?", email);
-  if (existing) {
-    await run(env, "UPDATE users SET role = 'root' WHERE id = ?", existing.id);
+export async function ensureDefaultAccounts(env) {
+  if (await first(env, "SELECT value FROM app_settings WHERE key = ?", ACCOUNT_BOOTSTRAP_KEY)) {
     return;
   }
 
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  try {
-    await run(
-      env,
-      `INSERT INTO users(id, email, password_hash, salt, role)
-       VALUES (?, ?, ?, ?, 'root')`,
-      crypto.randomUUID(),
-      email,
-      toHex(await passwordHash(password, salt)),
-      toHex(salt),
+  const accounts = DEFAULT_ACCOUNTS.map(([email, role, secret]) => ({
+    email,
+    role,
+    password: String(env[secret] || ""),
+  }));
+  const missing = accounts.filter((account) => account.password.length < 16);
+  if (missing.length) {
+    const error = new Error(
+      `Set these GitHub/Worker password secrets to at least 16 characters: ${missing.map((account) => `${account.role.toUpperCase()}_PASSWORD`).join(", ")}.`,
     );
-  } catch (error) {
-    const raced = await first(env, "SELECT id FROM users WHERE lower(email) = ?", email);
-    if (!raced) throw error;
-    await run(env, "UPDATE users SET role = 'root' WHERE id = ?", raced.id);
+    error.code = "ACCOUNT_BOOTSTRAP_CONFIG";
+    throw error;
   }
+
+  const statements = [
+    env.DB.prepare(
+      `DELETE FROM sessions
+       WHERE NOT EXISTS (SELECT 1 FROM app_settings WHERE key = ?)`,
+    ).bind(ACCOUNT_BOOTSTRAP_KEY),
+    env.DB.prepare(
+      `DELETE FROM users
+       WHERE NOT EXISTS (SELECT 1 FROM app_settings WHERE key = ?)`,
+    ).bind(ACCOUNT_BOOTSTRAP_KEY),
+  ];
+  for (const account of accounts) {
+    const salt = toHex(crypto.getRandomValues(new Uint8Array(16)));
+    statements.push(env.DB.prepare(
+      `INSERT INTO users(id, email, password_hash, salt, role)
+       SELECT ?, ?, ?, ?, ?
+       WHERE NOT EXISTS (SELECT 1 FROM app_settings WHERE key = ?)`,
+    ).bind(
+      crypto.randomUUID(),
+      account.email,
+      toHex(await passwordHash(account.password, salt)),
+      salt,
+      account.role,
+      ACCOUNT_BOOTSTRAP_KEY,
+    ));
+  }
+  statements.push(env.DB.prepare(
+    `INSERT OR IGNORE INTO app_settings(key, value)
+     VALUES (?, datetime('now'))`,
+  ).bind(ACCOUNT_BOOTSTRAP_KEY));
+  await env.DB.batch(statements);
 }
 
 export async function createUser(env, email, password, role = "editor") {
   const normalizedEmail = email.trim().toLowerCase();
-  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const salt = toHex(crypto.getRandomValues(new Uint8Array(16)));
   const user = {
     id: crypto.randomUUID(),
     email: normalizedEmail,
@@ -147,7 +166,7 @@ export async function authenticateUser(env, email, password) {
   );
   if (!user) return null;
 
-  const actual = await passwordHash(password, fromHex(user.salt));
+  const actual = await passwordHash(password, user.salt);
   const expected = fromHex(user.password_hash);
   let mismatch = actual.length ^ expected.length;
   for (let index = 0; index < Math.max(actual.length, expected.length); index += 1) {

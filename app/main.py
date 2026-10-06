@@ -172,18 +172,15 @@ def require_roles(*allowed_roles: str):
 
 # Auth Endpoints
 @app.post("/api/auth/signup")
-def signup(req: AuthReq, request: Request):
-    try:
-        user = db.create_user(req.email, req.password, role="editor")
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    token = db.create_session(user["id"])
-    ip = request.client.host if request.client else None
-    db.record_audit_log(user["id"], user["email"], "user_signup", {"role": user["role"]}, ip)
-    return {"token": token, "user": user}
+def signup():
+    raise HTTPException(403, "Public sign-up is disabled. Use one of the provisioned accounts.")
 
 @app.post("/api/auth/login")
 def login(req: AuthReq, request: Request):
+    try:
+        db.ensure_default_accounts()
+    except RuntimeError as error:
+        raise HTTPException(503, str(error)) from error
     user = db.authenticate_user(req.email, req.password)
     if not user:
         raise HTTPException(401, "Invalid email or password")

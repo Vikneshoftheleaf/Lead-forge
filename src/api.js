@@ -2,8 +2,7 @@ import {
   all,
   authenticateUser,
   createSession,
-  createUser,
-  ensureRootUser,
+  ensureDefaultAccounts,
   first,
   getSessionUser,
   json,
@@ -409,25 +408,19 @@ async function dispatchApi(request, env) {
     });
   }
 
-  if ((method === "POST" && ["/api/auth/signup", "/api/auth/login"].includes(pathname))) {
-    await ensureRootUser(env);
+  if (method === "POST" && pathname === "/api/auth/signup") {
+    fail(403, "Public sign-up is disabled. Use one of the provisioned accounts.");
+  }
+
+  if (method === "POST" && pathname === "/api/auth/login") {
+    await ensureDefaultAccounts(env);
     const input = await readJson(request);
     const email = requireString(input.email, "email", { min: 3, max: 320 });
     const password = requireString(input.password, "password", { min: 6, max: 256 });
-    let user;
-    if (pathname.endsWith("/signup")) {
-      try {
-        user = await createUser(env, email, password);
-      } catch (error) {
-        if (/already registered/i.test(error.message)) fail(400, error.message);
-        throw error;
-      }
-    } else {
-      user = await authenticateUser(env, email, password);
-      if (!user) fail(401, "Invalid email or password.");
-    }
+    const user = await authenticateUser(env, email, password);
+    if (!user) fail(401, "Invalid email or password.");
     const token = await createSession(env, user.id);
-    await audit(env, user, pathname.endsWith("/signup") ? "user_signup" : "user_login", { role: user.role }, request);
+    await audit(env, user, "user_login", { role: user.role }, request);
     return response({ token, user });
   }
 
@@ -489,17 +482,19 @@ async function dispatchApi(request, env) {
         }
         if (input.password) {
           const password = requireString(input.password, "password", { min: 6, max: 256 });
-          const salt = crypto.getRandomValues(new Uint8Array(16));
+          const salt = [...crypto.getRandomValues(new Uint8Array(16))]
+            .map((byte) => byte.toString(16).padStart(2, "0"))
+            .join("");
           const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
           const derived = new Uint8Array(await crypto.subtle.deriveBits(
-            { name: "PBKDF2", hash: "SHA-256", salt, iterations: 100_000 }, material, 256,
+            { name: "PBKDF2", hash: "SHA-256", salt: new TextEncoder().encode(salt), iterations: 100_000 }, material, 256,
           ));
           const hex = (value) => [...value].map((byte) => byte.toString(16).padStart(2, "0")).join("");
           await run(
             env,
             "UPDATE users SET password_hash = ?, salt = ? WHERE id = ?",
             hex(derived),
-            hex(salt),
+            salt,
             userId,
           );
           await run(env, "DELETE FROM sessions WHERE user_id = ?", userId);
@@ -702,7 +697,7 @@ export async function handleApi(request, env) {
     return response({ detail: "API route not found." }, 404);
   } catch (error) {
     if (error instanceof ApiError) return response({ detail: error.message }, error.status);
-    if (error?.code === "ROOT_BOOTSTRAP_CONFIG") {
+    if (error?.code === "ACCOUNT_BOOTSTRAP_CONFIG") {
       return response({ detail: error.message }, 503);
     }
     console.error("Worker API request failed", {

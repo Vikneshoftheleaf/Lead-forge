@@ -1,12 +1,15 @@
 import json
+import os
 import uuid
 import hashlib
 import secrets
+import threading
 
 from . import d1
 from .phones import indian_mobile_digits
 
 STATUSES = ["new", "site_built", "pitched", "replied", "won", "lost"]
+_account_bootstrap_lock = threading.Lock()
 
 # ---------------------------------------------------------------------------
 # Schema initialisation
@@ -115,37 +118,67 @@ def init():
             )""",
             "params": [],
         },
+        {
+            "sql": """CREATE TABLE IF NOT EXISTS app_settings(
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TEXT DEFAULT (datetime('now'))
+            )""",
+            "params": [],
+        },
     ]
     d1.batch(stmts)
 
-    # ── Ensure root user exists ───────────────────────────────────────────
-    root_email = "root@finsanta.com"
-    row = d1.fetchone(
-        "SELECT id FROM users WHERE lower(email)=?", [root_email]
-    )
-    if not row:
-        root_id = str(uuid.uuid4())
-        pwd_hash, salt = _hash_password("Letmein2026!")
-        d1.execute(
-            "INSERT INTO users(id, email, password_hash, salt, role) VALUES(?, ?, ?, ?, 'root')",
-            [root_id, root_email, pwd_hash, salt],
-        )
-    else:
-        d1.execute(
-            "UPDATE users SET role='root' WHERE lower(email)=?", [root_email]
+
+def ensure_default_accounts() -> bool:
+    """Replace legacy users once with the four configured, fixed-role accounts."""
+    with _account_bootstrap_lock:
+        return _ensure_default_accounts()
+
+
+def _ensure_default_accounts() -> bool:
+    marker = "role_accounts_v1"
+    if d1.fetchone("SELECT value FROM app_settings WHERE key=?", [marker]):
+        return False
+
+    accounts = [
+        ("root@finsanta.com", "root", "ROOT_PASSWORD"),
+        ("editor@finsanta.com", "editor", "EDITOR_PASSWORD"),
+        ("developer@finsanta.com", "developer", "DEVELOPER_PASSWORD"),
+        ("admin@finsanta.com", "admin", "ADMIN_PASSWORD"),
+    ]
+    configured = [(email, role, os.getenv(secret, "")) for email, role, secret in accounts]
+    missing = [
+        f"{role.upper()}_PASSWORD"
+        for _, role, password in configured
+        if len(password) < 16
+    ]
+    if missing:
+        raise RuntimeError(
+            "Set these GitHub/Worker password secrets to at least 16 characters: "
+            + ", ".join(missing)
+            + "."
         )
 
-    # Delete all non-root users (matches original behaviour)
-    root_id_row = d1.fetchone(
-        "SELECT id FROM users WHERE lower(email)=?", [root_email]
+    prepared = []
+    for email, role, password in configured:
+        password_hash, salt = _hash_password(password)
+        prepared.append((str(uuid.uuid4()), email, password_hash, salt, role))
+
+    # Remove all legacy sessions and users before inserting the fixed-role set.
+    d1.execute("DELETE FROM sessions")
+    d1.execute("DELETE FROM users")
+    for user in prepared:
+        d1.execute(
+            """INSERT INTO users(id, email, password_hash, salt, role)
+               VALUES(?, ?, ?, ?, ?)""",
+            list(user),
+        )
+    d1.execute(
+        "INSERT OR IGNORE INTO app_settings(key, value) VALUES(?, datetime('now'))",
+        [marker],
     )
-    if root_id_row:
-        d1.execute(
-            "DELETE FROM users WHERE lower(email)!=?", [root_email]
-        )
-        d1.execute(
-            "DELETE FROM sessions WHERE user_id NOT IN (SELECT id FROM users)"
-        )
+    return True
 
 
 # ---------------------------------------------------------------------------
