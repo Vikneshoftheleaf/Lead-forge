@@ -82,6 +82,14 @@ button, input, select, textarea { font: inherit; }
 .auth-form label { font-size: 12px; font-weight: 750; color: #c4c8d6; margin-bottom: 5px; display: block; }
 .auth-form input { width: 100%; padding: 12px 14px; border: 1px solid #ffffff1f; border-radius: 10px; background: #ffffff0d; color: #fff; outline: none; font-size: 14px; transition: border-color .18s; }
 .auth-form input:focus { border-color: #857bf0; box-shadow: 0 0 0 3px #5546e833; }
+.auth-password-wrap { position: relative; }
+.auth-password-wrap input { padding-right: 62px; }
+.auth-password-toggle {
+  position: absolute; top: 50%; right: 10px; transform: translateY(-50%); padding: 5px 4px;
+  border: 0; background: transparent; color: #b8b4ff; font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.auth-password-toggle:hover { color: #fff; }
+.auth-password-toggle:focus-visible { outline: 2px solid #a59bff; outline-offset: 2px; border-radius: 4px; }
 .auth-btn { width: 100%; min-height: 44px; margin-top: 10px; font-size: 14px; font-weight: 700; }
 .auth-hint { margin-top: 18px; text-align: center; color: #7e8799; font-size: 11px; line-height: 1.5; }
 
@@ -301,7 +309,10 @@ tbody tr:hover { background: #fafaff; }
       </div>
       <div>
         <label for="auth-password">Password</label>
-        <input id="auth-password" type="password" placeholder="••••••••" required minlength="6" autocomplete="current-password">
+        <div class="auth-password-wrap">
+          <input id="auth-password" type="password" placeholder="••••••••" required minlength="6" autocomplete="current-password">
+          <button class="auth-password-toggle" id="auth-password-toggle" type="button" aria-controls="auth-password" aria-label="Show password" aria-pressed="false">Show</button>
+        </div>
       </div>
       <button class="btn btn-primary auth-btn" type="submit" id="auth-submit-btn">Sign In</button>
     </form>
@@ -583,6 +594,15 @@ $('#tab-signup').addEventListener('click', ()=>{
   $('#tab-login').classList.remove('active');
   $('#auth-subtitle').textContent = 'Create a new account (default role: Editor)';
   $('#auth-submit-btn').textContent = 'Create Account';
+});
+
+$('#auth-password-toggle').addEventListener('click', ()=>{
+  const password = $('#auth-password');
+  const visible = password.type === 'password';
+  password.type = visible ? 'text' : 'password';
+  $('#auth-password-toggle').textContent = visible ? 'Hide' : 'Show';
+  $('#auth-password-toggle').setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
+  $('#auth-password-toggle').setAttribute('aria-pressed', String(visible));
 });
 
 $('#auth-form').addEventListener('submit', async (e)=>{
