@@ -1,15 +1,12 @@
 import json
-import os
 import uuid
 import hashlib
 import secrets
-import threading
 
 from . import d1
 from .phones import indian_mobile_digits
 
 STATUSES = ["new", "site_built", "pitched", "replied", "won", "lost"]
-_account_bootstrap_lock = threading.Lock()
 
 # ---------------------------------------------------------------------------
 # Schema initialisation
@@ -128,57 +125,6 @@ def init():
         },
     ]
     d1.batch(stmts)
-
-
-def ensure_default_accounts() -> bool:
-    """Replace legacy users once with the four configured, fixed-role accounts."""
-    with _account_bootstrap_lock:
-        return _ensure_default_accounts()
-
-
-def _ensure_default_accounts() -> bool:
-    marker = "role_accounts_v1"
-    if d1.fetchone("SELECT value FROM app_settings WHERE key=?", [marker]):
-        return False
-
-    accounts = [
-        ("root@finsanta.com", "root", "ROOT_PASSWORD"),
-        ("editor@finsanta.com", "editor", "EDITOR_PASSWORD"),
-        ("developer@finsanta.com", "developer", "DEVELOPER_PASSWORD"),
-        ("admin@finsanta.com", "admin", "ADMIN_PASSWORD"),
-    ]
-    configured = [(email, role, os.getenv(secret, "")) for email, role, secret in accounts]
-    missing = [
-        f"{role.upper()}_PASSWORD"
-        for _, role, password in configured
-        if len(password) < 16
-    ]
-    if missing:
-        raise RuntimeError(
-            "Set these GitHub/Worker password secrets to at least 16 characters: "
-            + ", ".join(missing)
-            + "."
-        )
-
-    prepared = []
-    for email, role, password in configured:
-        password_hash, salt = _hash_password(password)
-        prepared.append((str(uuid.uuid4()), email, password_hash, salt, role))
-
-    # Remove all legacy sessions and users before inserting the fixed-role set.
-    d1.execute("DELETE FROM sessions")
-    d1.execute("DELETE FROM users")
-    for user in prepared:
-        d1.execute(
-            """INSERT INTO users(id, email, password_hash, salt, role)
-               VALUES(?, ?, ?, ?, ?)""",
-            list(user),
-        )
-    d1.execute(
-        "INSERT OR IGNORE INTO app_settings(key, value) VALUES(?, datetime('now'))",
-        [marker],
-    )
-    return True
 
 
 # ---------------------------------------------------------------------------

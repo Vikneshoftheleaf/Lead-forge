@@ -28,34 +28,39 @@ jobs:
       - name: Run Worker tests
         run: npm test
 
-      - name: Validate deployment secrets
+      - name: Validate mapped environment
         run: |
           node --input-type=module -e '
+            import { readFileSync } from "node:fs";
             const required = [
               "CF_API_TOKEN",
               "CF_ACCOUNT_ID",
+              "CF_D1_DATABASE_ID",
               "SERPAPI_KEY",
               "GEMINI_API_KEY",
-              "ROOT_PASSWORD",
-              "EDITOR_PASSWORD",
-              "DEVELOPER_PASSWORD",
-              "ADMIN_PASSWORD",
             ];
             const missing = required.filter((key) => !process.env[key]);
             if (missing.length) throw new Error(`Missing GitHub Actions secrets: ${missing.join(", ")}`);
-            const weakPasswords = ["ROOT_PASSWORD", "EDITOR_PASSWORD", "DEVELOPER_PASSWORD", "ADMIN_PASSWORD"]
-              .filter((key) => process.env[key].length < 16);
-            if (weakPasswords.length) throw new Error(`Account passwords must be at least 16 characters: ${weakPasswords.join(", ")}`);
+            const config = readFileSync("wrangler.toml", "utf8");
+            const configuredDatabaseId = config.match(/database_id\s*=\s*"([^"]+)"/)?.[1];
+            if (configuredDatabaseId !== process.env.CF_D1_DATABASE_ID) {
+              throw new Error("CF_D1_DATABASE_ID does not match wrangler.toml.");
+            }
           '
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_D1_DATABASE_ID: ${{ secrets.CF_D1_DATABASE_ID }}
           SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          ROOT_PASSWORD: ${{ secrets.ROOT_PASSWORD }}
-          EDITOR_PASSWORD: ${{ secrets.EDITOR_PASSWORD }}
-          DEVELOPER_PASSWORD: ${{ secrets.DEVELOPER_PASSWORD }}
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+          BASE_URL: ${{ secrets.BASE_URL }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
 
       - name: Validate Worker bundle
         run: npx wrangler deploy --dry-run
@@ -79,23 +84,15 @@ jobs:
         run: |
           node --input-type=module -e '
             import { writeFileSync } from "node:fs";
-            const required = [
+            const runtimeKeys = [
               "SERPAPI_KEY",
+              "UNSPLASH_ACCESS_KEY",
               "GEMINI_API_KEY",
-              "ROOT_PASSWORD",
-              "EDITOR_PASSWORD",
-              "DEVELOPER_PASSWORD",
-              "ADMIN_PASSWORD",
+              "GEMINI_MODEL",
             ];
-            const missing = required.filter((key) => !process.env[key]);
+            const missing = ["SERPAPI_KEY", "GEMINI_API_KEY"].filter((key) => !process.env[key]);
             if (missing.length) throw new Error(`Missing GitHub Actions secrets: ${missing.join(", ")}`);
-            const weakPasswords = ["ROOT_PASSWORD", "EDITOR_PASSWORD", "DEVELOPER_PASSWORD", "ADMIN_PASSWORD"]
-              .filter((key) => process.env[key].length < 16);
-            if (weakPasswords.length) throw new Error(`Account passwords must be at least 16 characters: ${weakPasswords.join(", ")}`);
-            const secrets = Object.fromEntries(required.map((key) => [key, process.env[key]]));
-            for (const key of ["UNSPLASH_ACCESS_KEY", "GEMINI_MODEL"]) {
-              secrets[key] = process.env[key] || null;
-            }
+            const secrets = Object.fromEntries(runtimeKeys.map((key) => [key, process.env[key] || null]));
             writeFileSync(".worker-secrets.json", JSON.stringify(secrets), { mode: 0o600 });
           '
           npx wrangler secret bulk .worker-secrets.json
@@ -104,10 +101,6 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          ROOT_PASSWORD: ${{ secrets.ROOT_PASSWORD }}
-          EDITOR_PASSWORD: ${{ secrets.EDITOR_PASSWORD }}
-          DEVELOPER_PASSWORD: ${{ secrets.DEVELOPER_PASSWORD }}
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}

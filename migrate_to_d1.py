@@ -32,10 +32,9 @@ import requests
 DB_PATH = Path(__file__).resolve().parent / "leads.db"
 
 # Tables in dependency order (parents before children).
-# Sessions skipped -- stale tokens, FK constraint would reject them anyway.
+# User accounts are provisioned separately and must never be copied from SQLite.
 TABLES = [
     "leads",
-    "users",
     "site_generation_jobs",
     "lead_activities",
     "audit_logs",
@@ -167,15 +166,6 @@ def insert_rows(table: str, rows: list[dict]):
     print(f"  {table}: {len(rows)} rows processed -- inserted={ok}, ignored={skipped}    ", flush=True)
 
 
-def ensure_default_accounts():
-    from app import db
-
-    if db.ensure_default_accounts():
-        print("  Replaced legacy users with the four configured role accounts.", flush=True)
-    else:
-        print("  Fixed-role accounts were already provisioned; no user changes made.", flush=True)
-
-
 def main():
     if not DB_PATH.exists():
         print(f"ERROR: {DB_PATH} not found.", file=sys.stderr, flush=True)
@@ -199,12 +189,8 @@ def main():
             print(f"\n  ERROR on table '{table}': {exc}", file=sys.stderr, flush=True)
     print("", flush=True)
 
-    print("[3/3] Provisioning fixed-role accounts...", flush=True)
-    ensure_default_accounts()
-    print("", flush=True)
-
     print("Migration complete.", flush=True)
-    print("NOTE: Sessions were not migrated -- users must log in again.", flush=True)
+    print("NOTE: Users and sessions were not migrated. Use the configured D1 accounts.", flush=True)
 
 
 if __name__ == "__main__":

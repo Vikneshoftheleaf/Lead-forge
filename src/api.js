@@ -2,7 +2,6 @@ import {
   all,
   authenticateUser,
   createSession,
-  ensureDefaultAccounts,
   first,
   getSessionUser,
   json,
@@ -409,11 +408,10 @@ async function dispatchApi(request, env) {
   }
 
   if (method === "POST" && pathname === "/api/auth/signup") {
-    fail(403, "Public sign-up is disabled. Use one of the provisioned accounts.");
+    fail(403, "Public sign-up is disabled. Use an account provisioned by the administrator.");
   }
 
   if (method === "POST" && pathname === "/api/auth/login") {
-    await ensureDefaultAccounts(env);
     const input = await readJson(request);
     const email = requireString(input.email, "email", { min: 3, max: 320 });
     const password = requireString(input.password, "password", { min: 6, max: 256 });
@@ -697,9 +695,6 @@ export async function handleApi(request, env) {
     return response({ detail: "API route not found." }, 404);
   } catch (error) {
     if (error instanceof ApiError) return response({ detail: error.message }, error.status);
-    if (error?.code === "ACCOUNT_BOOTSTRAP_CONFIG") {
-      return response({ detail: error.message }, 503);
-    }
     console.error("Worker API request failed", {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,

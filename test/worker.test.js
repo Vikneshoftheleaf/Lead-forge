@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import worker from "../src/worker.js";
-import { authenticateUser, ensureDefaultAccounts } from "../src/db.js";
+import { authenticateUser } from "../src/db.js";
 
 function object(body, contentType) {
   return {
@@ -76,17 +76,8 @@ test("site management API rejects unauthenticated requests", async () => {
   assert.deepEqual(await response.json(), { detail: "Not authenticated." });
 });
 
-test("user bootstrap requires all four strong account passwords", async () => {
-  const env = {
-    ROOT_PASSWORD: "a".repeat(20),
-    EDITOR_PASSWORD: "b".repeat(20),
-    DEVELOPER_PASSWORD: "c".repeat(20),
-  };
-  env.DB = {
-    prepare() {
-      return { bind() { return { first: async () => null }; } };
-    },
-  };
+test("login uses existing accounts and does not provision users from secrets", async () => {
+  const preparedSql = [];
   const response = await worker.fetch(
     new Request("https://lead-forge.example/api/auth/login", {
       method: "POST",
@@ -94,71 +85,21 @@ test("user bootstrap requires all four strong account passwords", async () => {
       body: JSON.stringify({ email: "root@example.com", password: "password123" }),
     }),
     {
-      ...env,
+      DB: {
+        prepare(sql) {
+          preparedSql.push(sql);
+          return { bind() { return { first: async () => null }; } };
+        },
+      },
     },
   );
-  assert.equal(response.status, 503);
+  assert.equal(response.status, 401);
   assert.deepEqual(await response.json(), {
-    detail: "Set these GitHub/Worker password secrets to at least 16 characters: ADMIN_PASSWORD.",
+    detail: "Invalid email or password.",
   });
-});
-
-test("one-time bootstrap replaces all users and sessions with four fixed-role accounts", async () => {
-  const statements = [];
-  const env = {
-    ROOT_PASSWORD: "r".repeat(24),
-    EDITOR_PASSWORD: "e".repeat(24),
-    DEVELOPER_PASSWORD: "d".repeat(24),
-    ADMIN_PASSWORD: "a".repeat(24),
-    DB: {
-      prepare(sql) {
-        return {
-          sql,
-          bind(...params) {
-            return { sql, params, first: async () => null };
-          },
-        };
-      },
-      async batch(batch) {
-        statements.push(...batch);
-      },
-    },
-  };
-
-  await ensureDefaultAccounts(env);
-
-  assert.equal(statements.length, 7);
-  assert.match(statements[0].sql, /DELETE FROM sessions/);
-  assert.match(statements[1].sql, /DELETE FROM users/);
-  const accountStatements = statements.filter((statement) => statement.sql.includes("INSERT INTO users"));
-  assert.deepEqual(accountStatements.map((statement) => statement.params[1]), [
-    "root@finsanta.com",
-    "editor@finsanta.com",
-    "developer@finsanta.com",
-    "admin@finsanta.com",
+  assert.deepEqual(preparedSql, [
+    "SELECT id, email, role, password_hash, salt FROM users WHERE lower(email) = ?",
   ]);
-  assert.deepEqual(accountStatements.map((statement) => statement.params[4]), [
-    "root",
-    "editor",
-    "developer",
-    "admin",
-  ]);
-  assert.match(statements[6].sql, /INSERT OR IGNORE INTO app_settings/);
-});
-
-test("account bootstrap skips user reset after it has completed", async () => {
-  let batches = 0;
-  await ensureDefaultAccounts({
-    DB: {
-      prepare() {
-        return { bind() { return { first: async () => ({ value: "done" }) }; } };
-      },
-      async batch() {
-        batches += 1;
-      },
-    },
-  });
-  assert.equal(batches, 0);
 });
 
 test("Worker password hashing matches the Python D1 password format", async () => {
@@ -193,6 +134,64 @@ test("Worker password hashing matches the Python D1 password format", async () =
   assert.equal(user?.email, "root@finsanta.com");
 });
 
+test("provisioned account can sign in without bootstrap secrets", async () => {
+  const password = "root-login-test-123";
+  const salt = "fedcba9876543210fedcba9876543210";
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+  const digest = new Uint8Array(await crypto.subtle.deriveBits(
+    { name: "PBKDF2", hash: "SHA-256", salt: new TextEncoder().encode(salt), iterations: 100_000 },
+    key,
+    256,
+  ));
+  const passwordHash = [...digest].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  const executedSql = [];
+  const response = await worker.fetch(
+    new Request("https://lead-forge.example/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "ROOT@FINSANTA.COM", password }),
+    }),
+    {
+      DB: {
+        prepare(sql) {
+          return {
+            bind() {
+              return {
+                first: async () => ({
+                  id: "root-id",
+                  email: "root@finsanta.com",
+                  role: "root",
+                  password_hash: passwordHash,
+                  salt,
+                }),
+                run: async () => {
+                  executedSql.push(sql);
+                  return { meta: { changes: 1 } };
+                },
+              };
+            },
+          };
+        },
+      },
+    },
+  );
+  assert.equal(response.status, 200);
+  const payload = await response.json();
+  assert.equal(payload.user.email, "root@finsanta.com");
+  assert.equal(payload.user.role, "root");
+  assert.ok(payload.token);
+  assert.deepEqual(executedSql, [
+    "INSERT INTO sessions(token, user_id) VALUES (?, ?)",
+    "INSERT INTO audit_logs(user_id, user_email, action, details, ip_address)\n     VALUES (?, ?, ?, ?, ?)",
+  ]);
+});
+
 test("public signup is disabled", async () => {
   const response = await worker.fetch(
     new Request("https://lead-forge.example/api/auth/signup", {
@@ -204,7 +203,7 @@ test("public signup is disabled", async () => {
   );
   assert.equal(response.status, 403);
   assert.deepEqual(await response.json(), {
-    detail: "Public sign-up is disabled. Use one of the provisioned accounts.",
+    detail: "Public sign-up is disabled. Use an account provisioned by the administrator.",
   });
 });
 

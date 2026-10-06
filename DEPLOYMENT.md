@@ -34,17 +34,19 @@ In the repository’s **Settings → Secrets and variables → Actions**, add th
 |---|---|
 | `CF_API_TOKEN` | Cloudflare API token used by Wrangler and the Python D1 adapter |
 | `CF_ACCOUNT_ID` | Cloudflare account that owns the Worker and resources |
+| `CF_D1_DATABASE_ID` | D1 database used by the Python migration helper |
 | `SERPAPI_KEY` | Google Maps lead search and business details |
 | `GEMINI_API_KEY` | Website generation |
-| `ROOT_PASSWORD` | Password for `root@finsanta.com` |
-| `EDITOR_PASSWORD` | Password for `editor@finsanta.com` |
-| `DEVELOPER_PASSWORD` | Password for `developer@finsanta.com` |
-| `ADMIN_PASSWORD` | Password for `admin@finsanta.com` |
-| `UNSPLASH_ACCESS_KEY` | Optional fallback photos when Maps photos are insufficient; removed from Worker when unset |
-| `GEMINI_MODEL` | Optional Gemini model override; removed from Worker when unset |
+| `GEMINI_MODEL` | Gemini model override |
+| `UNSPLASH_ACCESS_KEY` | Optional fallback photos when Maps photos are insufficient |
+| `BASE_URL` | Python/FastAPI public origin |
+| `R2_ACCOUNT_ID` | Python/FastAPI R2 S3 account identifier |
+| `R2_ACCESS_KEY_ID` | Python/FastAPI R2 S3 access key |
+| `R2_SECRET_ACCESS_KEY` | Python/FastAPI R2 S3 secret |
+| `R2_BUCKET_NAME` | Python/FastAPI R2 bucket |
+| `R2_ENDPOINT_URL` | Optional Python/FastAPI R2 S3 endpoint override |
 
-All four account passwords must be at least 16 characters. Use distinct, randomly generated values and do not commit them. The workflow synchronizes every listed runtime secret to the Worker on each push; optional secrets are explicitly removed from the Worker when their GitHub secret is blank. `CF_API_TOKEN` and `CF_ACCOUNT_ID` are used by deployment tooling and are not sent to the Worker.
-Remove the obsolete `ROOT_EMAIL` GitHub secret; account emails are now fixed in the application and are not configured as environment variables.
+GitHub Actions cannot read a local, gitignored `.env` file. Add the values there as GitHub Actions secrets with the same names; the workflow maps every `.env` variable into its deployment environment. The Worker receives only the service API keys and optional generation settings it uses. `CF_*` credentials are used by deployment tooling; `R2_*` credentials are for the separate Python backend, since the Worker uses native R2 bindings. Blank optional Worker secrets are removed during deployment.
 
 The API token needs **Workers Scripts: Edit**, **D1: Edit**, and **Queues: Edit** access for the target account. Keep the token and service keys in GitHub Secrets; do not add them to `wrangler.toml`, `.dev.vars.example`, or committed source.
 
@@ -63,8 +65,7 @@ To use a custom domain, attach it to the `lead-forge` Worker from **Cloudflare D
 - Published sites are served at `/site/{slug}`; photo assets are served at `/site-assets/{slug}/{filename}`.
 - The `Websites` tab and its HTML read/write endpoints are protected to root, admin, and developer roles. Editor users cannot access those endpoints.
 - HTML responses are revalidated so a direct HTML edit is reflected without regenerating a site. Photo assets remain immutable and cacheable.
-- Four fixed-role accounts are provisioned once on the first login after applying the account-bootstrap migration: `root@finsanta.com`, `editor@finsanta.com`, `developer@finsanta.com`, and `admin@finsanta.com`. That one-time bootstrap invalidates all old sessions and replaces all existing users with these four accounts. It uses the corresponding password secrets above. Public sign-up is disabled.
-- To deliberately repeat the user reset after the bootstrap has run (for example, after rotating account passwords), first update all four GitHub password secrets and push so they reach the Worker. Then run `npx wrangler d1 execute serpapi --remote --command "DELETE FROM app_settings WHERE key = 'role_accounts_v1';"`. The next login re-seeds the four accounts and invalidates all sessions again.
+- Four fixed-role accounts are provisioned directly in D1, separately from application startup and deployments: `root@finsanta.com`, `editor@finsanta.com`, `developer@finsanta.com`, and `admin@finsanta.com`. Passwords exist only as salted PBKDF2 hashes in D1; they are not stored in `.env`, GitHub Actions, or Worker secrets. Deployments never clear users or sessions. Public sign-up is disabled.
 
 ## Local Worker development
 
@@ -73,14 +74,12 @@ Use Node.js 22 or newer:
 ```bash
 npm ci
 Copy-Item .dev.vars.example .dev.vars
-# Edit .dev.vars and set valid service keys and four distinct account passwords.
+# Edit .dev.vars and set valid service API keys.
 npm run db:migrate:local
 npm run dev
 ```
 
-Local Worker authentication also provisions the four accounts once. The local D1 data is reset the first time login runs after the account-bootstrap migration.
-
-For the Python/FastAPI development backend, add the same four password variables to `.env` along with the `CF_API_TOKEN`, `CF_ACCOUNT_ID`, and `CF_D1_DATABASE_ID` needed to access D1. Its first login performs the same one-time user/session reset. Give development its own D1 database ID; the Python backend connects to the remote D1 API and will otherwise reset the database selected by `.env`.
+Provision local Worker accounts separately in local D1. For the Python/FastAPI development backend, configure `.env` with `CF_API_TOKEN`, `CF_ACCOUNT_ID`, and a development `CF_D1_DATABASE_ID`; avoid pointing it at production unless intended.
 
 To deploy manually from a configured machine:
 
