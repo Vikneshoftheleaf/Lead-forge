@@ -1,4 +1,8 @@
 .env
+.dev.vars
+.worker-secrets.json
+node_modules/
+.wrangler/
 *.db
 __pycache__/
 .venv/

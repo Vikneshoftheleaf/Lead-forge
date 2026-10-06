@@ -1,24 +1,31 @@
 from collections import OrderedDict
 from functools import lru_cache
+import hashlib
 import mimetypes
 import logging
 import os
+import re
 import threading
 import time
 
 import boto3
 from botocore.config import Config
-from botocore.exceptions import ClientError
+from botocore.exceptions import BotoCoreError, ClientError
 
 DEFAULT_BUCKET = "sites"
 CACHE_TTL_SECONDS = 60
 CACHE_MAX_ITEMS = 128
 CACHE_MAX_BYTES = 16 * 1024 * 1024
 MAX_OBJECT_BYTES = 2 * 1024 * 1024
+MAX_SITE_HTML_BYTES = 100 * 1024
 logger = logging.getLogger(__name__)
 
 
 class R2ObjectNotFound(FileNotFoundError):
+    pass
+
+
+class SiteVersionConflict(RuntimeError):
     pass
 
 
@@ -111,6 +118,8 @@ def get_object(key):
         if code in {"NoSuchKey", "NoSuchObject", "NotFound", "404"}:
             raise R2ObjectNotFound(key) from error
         raise RuntimeError(f"Cloudflare R2 read failed ({code or 'unknown error'}).") from error
+    except BotoCoreError as error:
+        raise RuntimeError("Cloudflare R2 read failed.") from error
 
     body_stream = result["Body"]
     try:
@@ -149,6 +158,79 @@ def site_exists(slug):
     return bool(page.get("Contents"))
 
 
+def list_site_pages():
+    """List top-level HTML objects that represent published sites."""
+    try:
+        client = _client()
+        paginator = client.get_paginator("list_objects_v2")
+        sites = []
+        for page in paginator.paginate(Bucket=_bucket()):
+            for item in page.get("Contents", []):
+                key = item.get("Key", "")
+                if "/" in key or not key.endswith(".html"):
+                    continue
+                slug = key[:-5]
+                if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", slug) or len(slug) > 120:
+                    continue
+                sites.append({
+                    "slug": slug,
+                    "size": item.get("Size", 0),
+                    "last_modified": (
+                        item["LastModified"].isoformat()
+                        if item.get("LastModified")
+                        else None
+                    ),
+                })
+        return sites
+    except ClientError as error:
+        code = str(error.response.get("Error", {}).get("Code", ""))
+        raise RuntimeError(
+            f"Cloudflare R2 site listing failed ({code or 'unknown error'})."
+        ) from error
+    except BotoCoreError as error:
+        raise RuntimeError("Cloudflare R2 site listing failed.") from error
+
+
+def read_site_html(slug):
+    if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", slug or "") or len(slug) > 120:
+        raise ValueError("Invalid generated site slug.")
+    invalidate_site_cache(slug)
+    body, _ = get_object(f"{slug}.html")
+    try:
+        page = body.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise RuntimeError("The stored site HTML is not valid UTF-8.") from error
+    return page, hashlib.sha256(body).hexdigest()
+
+
+def save_site_html(slug, page, expected_version):
+    if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", slug or "") or len(slug) > 120:
+        raise ValueError("Invalid generated site slug.")
+    page_body = page.encode("utf-8")
+    if len(page_body) > MAX_SITE_HTML_BYTES:
+        raise ValueError("Site HTML must be 100 KB or smaller.")
+    if not page.strip():
+        raise ValueError("Site HTML cannot be empty.")
+    if not re.search(r"<html\b", page, flags=re.IGNORECASE) or not re.search(
+        r"</html\s*>", page, flags=re.IGNORECASE
+    ):
+        raise ValueError("Site HTML must contain a complete <html> document.")
+
+    _, current_version = read_site_html(slug)
+    if current_version != expected_version:
+        raise SiteVersionConflict(
+            "This site was changed after you opened it. Reload the latest HTML "
+            "before saving your changes."
+        )
+    put_object(
+        f"{slug}.html",
+        page_body,
+        "text/html; charset=utf-8",
+        "no-cache, must-revalidate",
+    )
+    return hashlib.sha256(page_body).hexdigest(), len(page_body)
+
+
 def put_object(key, body, content_type, cache_control):
     try:
         _client().put_object(
@@ -161,6 +243,8 @@ def put_object(key, body, content_type, cache_control):
     except ClientError as error:
         code = str(error.response.get("Error", {}).get("Code", ""))
         raise RuntimeError(f"Cloudflare R2 write failed ({code or 'unknown error'}).") from error
+    except BotoCoreError as error:
+        raise RuntimeError("Cloudflare R2 write failed.") from error
     invalidate_site_cache(key.removesuffix(".html").split("/", 1)[0])
 
 

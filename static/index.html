@@ -219,6 +219,21 @@ tbody tr:hover { background: #fafaff; }
 .activity-title { color: #30384b; font-size: 12px; font-weight: 750; }
 .activity-time { margin-top: 4px; color: #8993a5; font-size: 10px; }
 .activity-detail { margin-top: 5px; color: #6f7a8f; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.workspace-tabs { display: flex; gap: 7px; margin: 0 0 22px; padding: 5px; width: fit-content; border: 1px solid #e7eaf1; border-radius: 12px; background: #fff; }
+.workspace-tab { min-height: 37px; padding: 8px 15px; border: 0; border-radius: 8px; color: #687386; background: transparent; font-size: 12px; font-weight: 750; cursor: pointer; }
+.workspace-tab.active { color: #fff; background: #5546e8; box-shadow: 0 4px 12px #5546e82b; }
+.website-list { padding: 0 18px; }
+.website-row { min-width: 0; min-height: 62px; padding: 11px 2px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border-bottom: 1px solid #eff1f5; }
+.website-row:last-child { border-bottom: 0; }
+.website-name { min-width: 0; color: #252c3f; font-size: 13px; font-weight: 750; overflow-wrap: anywhere; }
+.website-row-actions { display: flex; flex: 0 0 auto; gap: 7px; }
+.website-editor { overflow: hidden; }
+.editor-toolbar { padding: 14px 18px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); }
+.editor-title { min-width: 0; color: #252c3f; font-size: 13px; font-weight: 750; overflow-wrap: anywhere; }
+.editor-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.editor-info { padding: 9px 18px; display: flex; justify-content: space-between; gap: 10px; color: #8993a5; background: #fafbfe; font-size: 10px; }
+.html-editor { display: block; width: 100%; min-height: min(68vh, 850px); padding: 18px; border: 0; border-radius: 0; outline: none; resize: vertical; color: #dbe3f1; background: #171b2e; font: 12px/1.6 Consolas, "Courier New", monospace; tab-size: 2; white-space: pre; overflow: auto; }
+.html-editor:focus { box-shadow: inset 0 0 0 2px #857bf0; }
 .role-select { padding: 5px 9px; border-radius: 7px; border: 1px solid #dcdfe6; font-size: 11px; font-weight: 700; outline: none; }
 .permission-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; background: #f0f2f5; color: #606266; margin-left: 6px; }
 
@@ -255,6 +270,11 @@ tbody tr:hover { background: #fafaff; }
   .pipeline-filters { padding: 12px 15px; }
   .pipeline-filters .field { flex: 1 1 calc(50% - 9px); min-width: 0; }
   .activity-list { padding: 7px 16px 18px; }
+  .website-list { padding: 0 12px; }
+  .website-row { align-items: flex-start; }
+  .editor-toolbar { align-items: flex-start; flex-direction: column; }
+  .html-editor { min-height: 58vh; padding: 13px; font-size: 11px; }
+  .editor-info { padding: 9px 13px; }
 }
 </style>
 </head>
@@ -309,6 +329,12 @@ tbody tr:hover { background: #fafaff; }
     </div>
   </section>
 
+  <nav class="workspace-tabs" aria-label="Workspace sections">
+    <button type="button" class="workspace-tab active" id="leads-tab" data-action="show-leads" aria-selected="true">Pipeline</button>
+    <button type="button" class="workspace-tab hidden" id="websites-tab" data-action="show-websites" aria-selected="false">Websites</button>
+  </nav>
+
+  <div id="leads-view">
   <section class="stats" id="stats"></section>
 
   <section class="search-panel" id="search-section">
@@ -352,6 +378,33 @@ tbody tr:hover { background: #fafaff; }
     <nav class="pagination hidden" id="pagination" aria-label="Lead list pagination"><span id="pagination-summary" aria-live="polite"></span><div class="pagination-controls"><button class="btn btn-secondary btn-small" id="previous-page" data-action="previous-page">Previous</button><span id="pagination-current"></span><button class="btn btn-secondary btn-small" id="next-page" data-action="next-page">Next</button></div></nav>
     <div class="empty hidden" id="empty"><div class="empty-icon">⌕</div><strong>No leads found</strong><p>Search for local businesses or adjust your filter.</p></div>
   </section>
+  </div>
+
+  <section class="hidden" id="websites-view">
+    <div class="list-panel" id="websites-list-panel">
+      <div class="list-head">
+        <div class="list-title"><h2>Published websites</h2><span class="count" id="website-count">0</span></div>
+        <div class="list-tools">
+          <input class="field filter" id="website-filter" placeholder="Search websites by business or slug" aria-label="Search websites">
+          <button class="btn btn-secondary" type="button" data-action="refresh-websites">↻ &nbsp;Refresh websites</button>
+        </div>
+      </div>
+      <div class="website-list" id="website-list" aria-live="polite"></div>
+    </div>
+    <section class="list-panel website-editor hidden" id="site-editor-panel">
+      <div class="editor-toolbar">
+        <div class="editor-title" id="site-editor-title">Edit website HTML</div>
+        <div class="editor-actions">
+          <button class="btn btn-secondary btn-small" type="button" data-action="site-editor-back">← Websites</button>
+          <button class="btn btn-secondary btn-small" type="button" data-action="site-editor-reload">Reload</button>
+          <a class="btn btn-secondary btn-small" id="site-editor-preview" href="#" target="_blank" rel="noopener noreferrer">↗ View live site</a>
+          <button class="btn btn-primary btn-small" type="button" id="site-editor-save" data-action="site-editor-save" disabled>Save HTML</button>
+        </div>
+      </div>
+      <div class="editor-info"><span id="site-editor-state">Loading HTML…</span><span id="site-editor-size"></span></div>
+      <textarea class="html-editor" id="site-html-editor" aria-label="Website HTML source" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" disabled></textarea>
+    </section>
+  </section>
 </main>
 
 <div id="overlay-root"></div>
@@ -367,6 +420,12 @@ const S={
   token: localStorage.getItem('token'),
   authMode: 'login', // 'login' or 'signup'
   leads:[],
+  websites:[],
+  currentSite:null,
+  siteHtmlOriginal:'',
+  siteVersion:null,
+  siteSaving:false,
+  workspaceTab:'leads',
   selected:new Set(),
   toastTimer:null,
   loading:false,
@@ -416,6 +475,9 @@ function notify(message, error=false){
 // Authentication Handlers
 function updateAuthUI(){
   if (!S.user) {
+    setWorkspaceTab('leads', true);
+    clearWebsiteWorkspace();
+    $('#websites-tab').classList.add('hidden');
     $('#auth-wrapper').classList.remove('hidden');
     $('#app-workspace').classList.add('hidden');
     $('#header-user-info').innerHTML = '';
@@ -423,6 +485,12 @@ function updateAuthUI(){
   }
   $('#auth-wrapper').classList.add('hidden');
   $('#app-workspace').classList.remove('hidden');
+  const canManage=canManageSites();
+  $('#websites-tab').classList.toggle('hidden', !canManage);
+  if(!canManage){
+    setWorkspaceTab('leads', true);
+    clearWebsiteWorkspace();
+  }
 
   // Render Header User Info
   const roleClass = S.user.role === 'root' ? 'role-root' : (S.user.role === 'admin' ? 'role-admin' : (S.user.role === 'developer' ? 'role-developer' : 'role-editor'));
@@ -448,6 +516,47 @@ function updateAuthUI(){
     $('#search-button').disabled = false;
     $$('#search-form input').forEach(inp => inp.disabled = false);
     $('#search-perm-badge').textContent = '';
+  }
+}
+
+function canManageSites(){
+  return ['root','admin','developer'].includes(S.user?.role);
+}
+
+function clearWebsiteWorkspace(){
+  S.websites=[];
+  S.currentSite=null;
+  S.siteHtmlOriginal='';
+  S.siteVersion=null;
+  $('#website-list').replaceChildren();
+  $('#site-html-editor').value='';
+  $('#site-html-editor').disabled=true;
+  $('#site-editor-state').textContent='No website selected';
+  $('#site-editor-size').textContent='';
+  $('#site-editor-save').disabled=true;
+}
+
+function siteEditorDirty(){
+  return S.currentSite !== null && $('#site-html-editor').value !== S.siteHtmlOriginal;
+}
+
+function setWorkspaceTab(tab, force=false){
+  if(tab==='websites'&&!canManageSites())return;
+  if(!force&&siteEditorDirty()&&!confirm('Discard your unsaved website changes?'))return;
+  S.workspaceTab=tab;
+  const websites=tab==='websites';
+  $('#leads-view').classList.toggle('hidden',websites);
+  $('#websites-view').classList.toggle('hidden',!websites);
+  $('#leads-tab').classList.toggle('active',!websites);
+  $('#leads-tab').setAttribute('aria-selected',String(!websites));
+  $('#websites-tab').classList.toggle('active',websites);
+  $('#websites-tab').setAttribute('aria-selected',String(websites));
+  if(websites){
+    S.currentSite=null;
+    S.siteVersion=null;
+    $('#websites-list-panel').classList.remove('hidden');
+    $('#site-editor-panel').classList.add('hidden');
+    loadWebsites();
   }
 }
 
@@ -555,6 +664,112 @@ async function load(){
   }
 }
 
+function filteredWebsites(){
+  const query=$('#website-filter').value.trim().toLowerCase();
+  return S.websites.filter(site=>
+    !query||`${site.name||''} ${site.slug||''} ${site.category||''} ${site.address||''}`.toLowerCase().includes(query)
+  );
+}
+
+async function loadWebsites(){
+  if(!canManageSites())return;
+  const list=$('#website-list');
+  list.innerHTML='<div class="empty">Loading published websites…</div>';
+  try{
+    S.websites=await api('/api/sites');
+    renderWebsites();
+  }catch(error){
+    list.innerHTML=`<div class="empty"><strong>Could not load websites</strong><p>${esc(error.message)}</p></div>`;
+  }
+}
+
+function renderWebsites(){
+  const sites=filteredWebsites();
+  $('#website-count').textContent=sites.length;
+  if(!sites.length){
+    $('#website-list').innerHTML=`<div class="empty"><div class="empty-icon">⌘</div><strong>${S.websites.length?'No matching websites':'No published websites yet'}</strong><p>${S.websites.length?'Try a different search.':'Generated websites stored in R2 will appear here.'}</p></div>`;
+    return;
+  }
+  $('#website-list').innerHTML=sites.map(site=>{
+    return `<div class="website-row">
+      <div class="website-name">${esc(site.name||site.slug)}</div>
+      <div class="website-row-actions">
+        <a class="btn btn-secondary btn-small" href="${esc(site.public_url||site.url)}" target="_blank" rel="noopener noreferrer">Visit</a>
+        <button class="btn btn-primary btn-small" type="button" data-action="edit-site-html" data-slug="${esc(site.slug)}">Edit</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function openSiteHtmlEditor(slug){
+  if(!canManageSites())return;
+  const site=S.websites.find(item=>item.slug===slug);
+  if(!site)return;
+  S.currentSite=site;
+  S.siteHtmlOriginal='';
+  S.siteVersion=null;
+  $('#websites-list-panel').classList.add('hidden');
+  $('#site-editor-panel').classList.remove('hidden');
+  $('#site-editor-title').textContent=`HTML source · ${site.name||site.slug}`;
+  $('#site-editor-preview').href=site.public_url||site.url;
+  $('#site-html-editor').value='';
+  $('#site-html-editor').disabled=true;
+  $('#site-editor-state').textContent='Loading HTML…';
+  updateSiteEditorInfo();
+  try{
+    const document=await api(`/api/sites/${encodeURIComponent(slug)}/html`);
+    if(S.currentSite?.slug!==slug)return;
+    S.siteVersion=document.version;
+    S.siteHtmlOriginal=document.html;
+    $('#site-html-editor').value=document.html;
+    $('#site-editor-preview').href=`${site.public_url||site.url}?v=${document.version}`;
+    $('#site-html-editor').disabled=false;
+    $('#site-html-editor').focus();
+    updateSiteEditorInfo();
+  }catch(error){
+    $('#site-editor-state').textContent=`Could not load HTML: ${error.message}`;
+    notify(error.message,true);
+  }
+}
+
+function updateSiteEditorInfo(){
+  const editor=$('#site-html-editor');
+  const dirty=siteEditorDirty();
+  const bytes=new Blob([editor.value]).size;
+  $('#site-editor-size').textContent=`${bytes.toLocaleString()} bytes · ${editor.value.split('\\n').length} lines`;
+  $('#site-editor-state').textContent=dirty?'Unsaved changes · Save to update the live site':'All changes saved';
+  $('#site-editor-save').disabled=!dirty||S.siteSaving||!S.siteVersion;
+}
+
+async function saveSiteHtml(){
+  if(!canManageSites()||!S.currentSite||!S.siteVersion||S.siteSaving)return;
+  const slug=S.currentSite.slug;
+  const button=$('#site-editor-save');
+  S.siteSaving=true;
+  button.disabled=true;
+  button.textContent='Saving…';
+  updateSiteEditorInfo();
+  try{
+    const result=await api(`/api/sites/${encodeURIComponent(slug)}/html`,'PUT',{
+      html:$('#site-html-editor').value,
+      version:S.siteVersion
+    });
+    S.siteVersion=result.version;
+    S.siteHtmlOriginal=$('#site-html-editor').value;
+    $('#site-editor-preview').href=`${S.currentSite.public_url||S.currentSite.url}?v=${result.version}`;
+    updateSiteEditorInfo();
+    await loadWebsites();
+    notify('Website HTML saved and published to R2.');
+  }catch(error){
+    notify(error.message,true);
+    if(error.message.includes('Reload the latest HTML'))$('#site-editor-state').textContent='Conflict: reload the latest HTML before saving.';
+  }finally{
+    S.siteSaving=false;
+    button.textContent='Save HTML';
+    updateSiteEditorInfo();
+  }
+}
+
 function render(){
   const leads=filteredLeads();
   const pageCount=Math.max(1,Math.ceil(leads.length/PAGE_SIZE));
@@ -621,7 +836,7 @@ function whatsappPitch(lead){
 }
 
 function activityTitle(item){
-  return ({lead_created:'Lead added to CRM',status_changed:'Pipeline status changed',lead_updated:'Lead details updated',site_generation_queued:'Website generation queued',site_generation_started:'Website generation started',site_generation_completed:'Website published',site_generation_failed:'Website generation failed'})[item.event_type]||'Lead activity';
+  return ({lead_created:'Lead added to CRM',status_changed:'Pipeline status changed',lead_updated:'Lead details updated',site_generation_queued:'Website generation queued',site_generation_started:'Website generation started',site_generation_completed:'Website published',site_generation_failed:'Website generation failed',site_html_edited:'Website HTML edited'})[item.event_type]||'Lead activity';
 }
 
 function activityDescription(item){
@@ -633,6 +848,7 @@ function activityDescription(item){
   if(item.event_type==='site_generation_started')return 'The background worker started building this website.';
   if(item.event_type==='site_generation_completed')return `Published at /site/${details.slug||''}.`;
   if(item.event_type==='site_generation_failed')return details.error||'The website build did not complete.';
+  if(item.event_type==='site_html_edited')return `Website source for /site/${details.slug||''} was updated.`;
   return '';
 }
 
@@ -876,6 +1092,25 @@ document.addEventListener('click',async event=>{
   if(!button){if(!event.target.closest('.row-action-menu'))closeLeadMenu();return}
   const action=button.dataset.action;
   const id=button.dataset.id;
+  if(action==='show-leads'){setWorkspaceTab('leads');return}
+  if(action==='show-websites'){setWorkspaceTab('websites');return}
+  if(action==='refresh-websites'){await loadWebsites();return}
+  if(action==='edit-site-html'){await openSiteHtmlEditor(button.dataset.slug);return}
+  if(action==='site-editor-save'){await saveSiteHtml();return}
+  if(action==='site-editor-back'){
+    if(siteEditorDirty()&&!confirm('Discard your unsaved website changes?'))return;
+    S.currentSite=null;
+    $('#site-editor-panel').classList.add('hidden');
+    $('#websites-list-panel').classList.remove('hidden');
+    await loadWebsites();
+    return;
+  }
+  if(action==='site-editor-reload'){
+    if(!S.currentSite)return;
+    if(siteEditorDirty()&&!confirm('Discard your unsaved website changes and reload the saved HTML?'))return;
+    await openSiteHtmlEditor(S.currentSite.slug);
+    return;
+  }
   if(action==='logout'){logout();return}
   if(action==='admin-users'){await openAdminUsers();return}
   if(action==='admin-logs'){await openAdminLogs();return}
@@ -951,6 +1186,22 @@ document.addEventListener('change',async event=>{
 });
 
 $('#filter').addEventListener('input',()=>{S.page=1;render()});
+$('#website-filter').addEventListener('input',renderWebsites);
+$('#site-html-editor').addEventListener('input',updateSiteEditorInfo);
+$('#site-html-editor').addEventListener('keydown',event=>{
+  if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){
+    event.preventDefault();
+    saveSiteHtml();
+  }
+  if(event.key==='Tab'){
+    event.preventDefault();
+    const editor=event.currentTarget;
+    const start=editor.selectionStart;
+    const end=editor.selectionEnd;
+    editor.setRangeText('  ',start,end,'end');
+    updateSiteEditorInfo();
+  }
+});
 $('#status-filter').insertAdjacentHTML('beforeend',STATUSES.map(status=>`<option value="${status}">${esc(STATUS_LABELS[status])}</option>`).join(''));
 
 $('#search-form').addEventListener('submit',async event=>{

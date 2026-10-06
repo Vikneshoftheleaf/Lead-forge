@@ -1,20 +1,32 @@
 name = "lead-forge"
 main = "src/worker.js"
-compatibility_date = "2024-09-23"
+compatibility_date = "2026-10-06"
 compatibility_flags = ["nodejs_compat"]
 
 # Static Assets (CRM frontend UI)
 [assets]
 directory = "./static"
 binding = "ASSETS"
+run_worker_first = ["/api/*", "/site/*", "/site-assets/*"]
 
 # Cloudflare D1 Database Binding
 [[d1_databases]]
 binding = "DB"
 database_name = "serpapi"
 database_id = "6d21281f-8bf0-410d-9776-dc25691c7e8c"
+migrations_dir = "migrations"
 
 # Cloudflare R2 Bucket Binding
 [[r2_buckets]]
 binding = "SITES_BUCKET"
 bucket_name = "sites"
+
+# Website builds run outside the request lifetime in a Cloudflare Queue consumer.
+[[queues.producers]]
+binding = "SITE_JOBS"
+queue = "lead-forge-site-jobs"
+
+[[queues.consumers]]
+queue = "lead-forge-site-jobs"
+max_batch_size = 1
+max_batch_timeout = 5

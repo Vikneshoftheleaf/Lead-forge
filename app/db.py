@@ -370,6 +370,14 @@ def get_site_slug_owner(slug):
     return row["place_id"] if row else None
 
 
+def list_published_site_leads():
+    return d1.query(
+        """SELECT site_slug, name, category, address, created_at
+           FROM leads
+           WHERE site_storage='r2' AND site_slug IS NOT NULL"""
+    )
+
+
 def claim_site_slug(pid, slug):
     affected = d1.changes(
         """UPDATE leads

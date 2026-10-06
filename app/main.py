@@ -140,6 +140,10 @@ class UserEditReq(BaseModel):
     email: str | None = Field(default=None, min_length=3, max_length=320)
     password: str | None = Field(default=None, min_length=6)
 
+class SiteHtmlUpdate(BaseModel):
+    html: str = Field(..., min_length=1, max_length=100_000)
+    version: str = Field(..., pattern="^[a-f0-9]{64}$")
+
 
 def get_current_user(request: Request):
     token = None
@@ -330,6 +334,87 @@ def leads(request: Request, status: str | None = None, min_reviews: int = 0, use
         )
     return result
 
+
+@app.get("/api/sites")
+def list_sites(request: Request, user = Depends(require_roles("developer"))):
+    try:
+        storage_sites = r2_storage.list_site_pages()
+        lead_details = {
+            lead["site_slug"]: lead for lead in db.list_published_site_leads()
+        }
+    except RuntimeError as error:
+        raise HTTPException(502, str(error)) from error
+
+    base_url = os.getenv("BASE_URL", str(request.base_url)).rstrip("/")
+    return [
+        {
+            **site,
+            "name": lead_details.get(site["slug"], {}).get("name") or site["slug"],
+            "category": lead_details.get(site["slug"], {}).get("category"),
+            "address": lead_details.get(site["slug"], {}).get("address"),
+            "created_at": lead_details.get(site["slug"], {}).get("created_at"),
+            "url": sitegen.site_url(site["slug"]),
+            "public_url": f"{base_url}{sitegen.site_url(site['slug'])}",
+        }
+        for site in sorted(
+            storage_sites,
+            key=lambda item: (item.get("last_modified") or "", item["slug"]),
+            reverse=True,
+        )
+    ]
+
+
+@app.get("/api/sites/{slug}/html")
+def get_site_html(slug: str, user = Depends(require_roles("developer"))):
+    try:
+        page, version = r2_storage.read_site_html(slug)
+    except ValueError as error:
+        raise HTTPException(400, str(error)) from error
+    except r2_storage.R2ObjectNotFound as error:
+        raise HTTPException(404, "site not found") from error
+    except RuntimeError as error:
+        raise HTTPException(502, str(error)) from error
+    return {"slug": slug, "html": page, "version": version}
+
+
+@app.put("/api/sites/{slug}/html")
+def update_site_html(
+    slug: str,
+    update: SiteHtmlUpdate,
+    request: Request,
+    user = Depends(require_roles("developer")),
+):
+    try:
+        version, size = r2_storage.save_site_html(
+            slug, update.html, update.version
+        )
+    except ValueError as error:
+        raise HTTPException(400, str(error)) from error
+    except r2_storage.R2ObjectNotFound as error:
+        raise HTTPException(404, "site not found") from error
+    except r2_storage.SiteVersionConflict as error:
+        raise HTTPException(409, str(error)) from error
+    except RuntimeError as error:
+        raise HTTPException(502, str(error)) from error
+
+    owner = db.get_site_slug_owner(slug)
+    ip = request.client.host if request.client else None
+    db.record_audit_log(
+        user["id"],
+        user["email"],
+        "edit_site_html",
+        {"slug": slug, "bytes": size, "version": version},
+        ip,
+    )
+    if owner:
+        db.record_activity(
+            owner,
+            "site_html_edited",
+            {"slug": slug, "user_email": user["email"]},
+        )
+    return {"slug": slug, "version": version, "bytes": size}
+
+
 @app.patch("/api/leads/{pid}")
 def update_lead(pid: str, r: LeadUpdate, request: Request, user = Depends(require_roles("editor"))):
     if not db.get_lead(pid):
@@ -480,7 +565,7 @@ def serve_site(slug: str):
         content=page,
         media_type="text/html",
         headers={
-            "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+            "Cache-Control": "no-cache, must-revalidate",
             "X-Content-Type-Options": "nosniff",
         },
     )

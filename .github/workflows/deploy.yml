@@ -1,0 +1,92 @@
+name: Deploy Lead Forge to Cloudflare Workers
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Worker tests
+        run: npm test
+
+      - name: Validate deployment secrets
+        run: |
+          node --input-type=module -e '
+            const required = [
+              "CLOUDFLARE_API_TOKEN",
+              "CLOUDFLARE_ACCOUNT_ID",
+              "SERPAPI_KEY",
+              "GEMINI_API_KEY",
+              "ROOT_EMAIL",
+              "ROOT_PASSWORD",
+            ];
+            const missing = required.filter((key) => !process.env[key]);
+            if (missing.length) throw new Error(`Missing GitHub Actions secrets: ${missing.join(", ")}`);
+          '
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ROOT_EMAIL: ${{ secrets.ROOT_EMAIL }}
+          ROOT_PASSWORD: ${{ secrets.ROOT_PASSWORD }}
+
+      - name: Validate Worker bundle
+        run: npx wrangler deploy --dry-run
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Apply D1 migrations
+        run: npx wrangler d1 migrations apply serpapi --remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy Worker and static assets
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Configure Worker secrets
+        run: |
+          node --input-type=module -e '
+            import { writeFileSync } from "node:fs";
+            const required = ["SERPAPI_KEY", "GEMINI_API_KEY", "ROOT_EMAIL", "ROOT_PASSWORD"];
+            const missing = required.filter((key) => !process.env[key]);
+            if (missing.length) throw new Error(`Missing GitHub Actions secrets: ${missing.join(", ")}`);
+            const secrets = Object.fromEntries([...required, "UNSPLASH_ACCESS_KEY"]
+              .filter((key) => process.env[key])
+              .map((key) => [key, process.env[key]]));
+            writeFileSync(".worker-secrets.json", JSON.stringify(secrets), { mode: 0o600 });
+          '
+          npx wrangler secret bulk .worker-secrets.json
+          rm -f .worker-secrets.json
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ROOT_EMAIL: ${{ secrets.ROOT_EMAIL }}
+          ROOT_PASSWORD: ${{ secrets.ROOT_PASSWORD }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}

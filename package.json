@@ -2,12 +2,13 @@
   "name": "lead-forge",
   "version": "1.0.0",
   "description": "Lead Forge - Google Maps CRM & Website Builder powered by Cloudflare D1 & R2",
+  "type": "module",
   "scripts": {
-    "deploy": "wrangler pages deploy static --project-name lead-forge",
-    "deploy:worker": "wrangler deploy",
-    "pages:dev": "wrangler pages dev static",
-    "d1:console": "wrangler d1 execute serpapi --remote --command=\"SELECT count(*) FROM leads;\"",
-    "d1:tables": "wrangler d1 execute serpapi --remote --command=\"SELECT name FROM sqlite_master WHERE type='table';\""
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:remote": "wrangler d1 migrations apply serpapi --remote",
+    "test": "node --test"
   },
   "devDependencies": {
     "wrangler": "^4.110.0"

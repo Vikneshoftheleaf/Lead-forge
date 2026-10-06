@@ -1,0 +1,6 @@
+SERPAPI_KEY=replace-with-serpapi-key
+GEMINI_API_KEY=replace-with-gemini-key
+GEMINI_MODEL=gemini-2.5-flash
+ROOT_EMAIL=admin@example.com
+ROOT_PASSWORD=replace-with-a-long-random-password
+UNSPLASH_ACCESS_KEY=
