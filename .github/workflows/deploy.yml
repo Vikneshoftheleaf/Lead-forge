@@ -1,4 +1,4 @@
-name: Deploy Lead Forge to Cloudflare Workers
+name: Deploy Lead Forge to CF Workers
 
 on:
   push:
@@ -32,8 +32,8 @@ jobs:
         run: |
           node --input-type=module -e '
             const required = [
-              "CLOUDFLARE_API_TOKEN",
-              "CLOUDFLARE_ACCOUNT_ID",
+              "CF_API_TOKEN",
+              "CF_ACCOUNT_ID",
               "SERPAPI_KEY",
               "GEMINI_API_KEY",
               "ROOT_EMAIL",
@@ -43,8 +43,8 @@ jobs:
             if (missing.length) throw new Error(`Missing GitHub Actions secrets: ${missing.join(", ")}`);
           '
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ROOT_EMAIL: ${{ secrets.ROOT_EMAIL }}
@@ -53,20 +53,20 @@ jobs:
       - name: Validate Worker bundle
         run: npx wrangler deploy --dry-run
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
 
       - name: Apply D1 migrations
         run: npx wrangler d1 migrations apply serpapi --remote
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
 
       - name: Deploy Worker and static assets
         run: npx wrangler deploy
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
 
       - name: Configure Worker secrets
         run: |
@@ -83,8 +83,8 @@ jobs:
           npx wrangler secret bulk .worker-secrets.json
           rm -f .worker-secrets.json
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ROOT_EMAIL: ${{ secrets.ROOT_EMAIL }}
