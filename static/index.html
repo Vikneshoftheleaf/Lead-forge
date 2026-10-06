@@ -839,7 +839,8 @@ function render(){
   <td>${l.website?`<a class="contact" href="${esc(l.website)}" target="_blank" rel="noopener noreferrer">Existing ↗</a>`:'<span class="subtle">None</span>'}</td>
   <td>
     <div class="actions">
-      ${l.site_ready?`<a class="btn btn-soft btn-small site-link" href="${esc(l.site_url)}" target="_blank" rel="noopener noreferrer">↗ View site</a>${whatsappPitch(l)}`:''}
+      ${l.site_ready?`<a class="btn btn-soft btn-small site-link" href="${esc(l.site_url)}" target="_blank" rel="noopener noreferrer">↗ View site</a>`:''}
+      ${whatsappPitch(l)}
       <button class="btn ${l.site_ready?'btn-secondary':'btn-primary'} btn-small" data-action="generate" data-id="${esc(l.place_id)}" ${genDisabled?'disabled':''} title="${genTitle}">${l.site_generation?'<span class="generation-spinner" aria-hidden="true"></span> Generating…':`✦ ${l.site_slug?'Regenerate':'Generate site'}`}</button>
       ${l.site_generation?`<div class="generation-progress"><div class="generation-progress-label"><span>${esc(l.site_generation.stage||'Queued')}</span><span>${esc(l.site_generation.progress||0)}%</span></div><progress max="100" value="${esc(l.site_generation.progress||0)}" aria-label="Site generation progress"></progress></div>`:''}
       <button class="gear-btn" type="button" data-action="lead-menu" data-id="${esc(l.place_id)}" aria-label="More actions for ${esc(l.name)}" aria-haspopup="menu" aria-expanded="false" title="More actions"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 2.94-.08-.03a1.7 1.7 0 0 0-1.84.49l-.05.07h-3.4l-.02-.09a1.7 1.7 0 0 0-1.38-1.36l-.09-.01-1.7-2.94.06-.06A1.7 1.7 0 0 0 9.94 14l-.08-.06v-3.4l.08-.03a1.7 1.7 0 0 0 1.2-1.5l.01-.09 2.94-1.7.06.06a1.7 1.7 0 0 0 1.88.34l.06-.06 2.94 1.7-.03.08a1.7 1.7 0 0 0 .49 1.84l.07.05v3.4l-.09.02A1.7 1.7 0 0 0 19.4 15Z"></path></svg></button>
@@ -851,9 +852,12 @@ function render(){
 
 function whatsappPitch(lead){
   if(!lead.whatsapp_phone)return '<button class="btn btn-secondary btn-small" type="button" disabled title="A valid Indian mobile number is required for WhatsApp">Outreach</button>';
-  const siteUrl=lead.site_public_url||new URL(lead.site_url,location.origin).href;
-  const message=`Hi ${lead.name||'there'}, we made a website for your business. You can see it here: ${siteUrl}. If you would like this website, let us know.`;
-  return `<a class="btn btn-secondary btn-small" href="${esc(`https://wa.me/${lead.whatsapp_phone}?text=${encodeURIComponent(message)}`)}" target="_blank" rel="noopener noreferrer">Outreach</a>`;
+  const businessName=lead.name||'there';
+  const siteUrl=lead.site_public_url||(lead.site_url?new URL(lead.site_url,location.origin).href:null);
+  const message=lead.site_ready&&siteUrl
+    ?`Hi ${businessName}, we created a website concept for your business. You can preview it here: ${siteUrl}. If you like it, we'd be happy to discuss making it yours.`
+    :`Hi ${businessName}, I noticed there isn't a website linked on your Google Maps listing. We help businesses create a professional website so customers can learn about their services and get in touch. Would you be open to a quick chat about what a website could do for your business?`;
+  return `<a class="btn btn-secondary btn-small" href="${esc(`https://web.whatsapp.com/send?phone=${lead.whatsapp_phone}&text=${encodeURIComponent(message)}`)}" target="_blank" rel="noopener noreferrer" aria-label="Open WhatsApp outreach for ${esc(businessName)}">Outreach</a>`;
 }
 
 function activityTitle(item){

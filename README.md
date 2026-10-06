@@ -1,38 +1,122 @@
 # Lead Forge
 
-Find Google Maps businesses with no website, manage them in a CRM, and generate bespoke static websites with Gemini.
+### SerpApi-powered prospecting for India's next generation of web creators.
 
-## Deploy to Cloudflare Workers
+**Turn a Google Maps search into a qualified lead, a custom website, and a ready-to-review WhatsApp introduction.**
 
-The Cloudflare deployment runs the CRM, API, and generated-site hosting from a single Worker, using D1 for application data, R2 for published sites, and a Queue for background website generation. Pushes to `main` run tests, apply database migrations, publish the Worker and static assets, and synchronize Worker runtime settings through GitHub Actions. The four fixed-role accounts are provisioned directly in D1, separately from deployments; public sign-up creates editor accounts only. Follow [DEPLOYMENT.md](./DEPLOYMENT.md) for setup.
+Lead Forge helps freelancers and small agencies find local businesses that may need a website, build one for them, and start a direct conversation. SerpApi is at the heart of the workflow: it turns local Google Maps searches into structured business leads and supplies the business context for each generated site.
 
-## Run
-```bash
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+> **The opportunity:** make it easier for independent web creators to find nearby businesses, show them what a professional web presence could look like, and build a sustainable client pipeline.
+
+## The SerpApi-powered workflow
+
+```mermaid
+flowchart LR
+    A[Choose a business type and Indian city] --> B[SerpApi searches Google Maps]
+    B --> C[Filter listings with no website shown]
+    C --> D[Prioritize valid Indian mobile contacts]
+    D --> E[Add qualified prospects to the CRM]
+    E --> F[SerpApi gathers place details, reviews, and photos]
+    F --> G[Gemini creates a tailored website]
+    G --> H[Publish the site to Cloudflare R2]
+    H --> I[Review a prefilled WhatsApp introduction]
+    I --> J[Freelancer sends it and starts the conversation]
+```
+
+## Why this matters in India
+
+India has a large, diverse base of micro and small businesses, spread across cities, towns, and business categories. Finding a promising local prospect one at a time is slow; searching by service and location gives freelancers a practical way to build a focused pipeline. The Ministry of MSME's annual reports provide useful context on the sector, while the ASUSE survey tracks India's unincorporated non-farm enterprises.
+
+For many local businesses, a mobile number is a practical first contact. WhatsApp's documented click-to-chat feature makes that contact path familiar and low-friction: Lead Forge keeps outreach available for every lead with a valid Indian mobile number, whether or not a site has been generated. Before generation, it drafts a website introduction; after publication, it pitches the preview link. **It does not send messages automatically.** The freelancer reviews the message and chooses whether to send it; a phone number is not proof that the business uses WhatsApp or wants to be contacted.
+
+That creates a simple opportunity for independent web creators: use local search to discover prospects, invest in a tailored sample site, and offer website creation or related services directly. Lead Forge helps with prospecting and preparation; client interest and revenue depend on the freelancer's offer and follow-up.
+
+### Research and product references
+
+- [SerpApi Google Maps API](https://serpapi.com/google-maps-api) — structured local business search by query and location.
+- [SerpApi Google Maps Place Results](https://serpapi.com/maps-place-results) — business details for enriching a prospect.
+- [SerpApi Google Maps Reviews API](https://serpapi.com/google-maps-reviews-api) and [Photos API](https://serpapi.com/google-maps-photos-api) — reviews and imagery used to personalize generated sites.
+- [Ministry of MSME annual reports](https://msme.gov.in/annual-report-2023-24) and [MoSPI's ASUSE survey](https://mospi.gov.in/annual-reports) — official context on India's MSME and unincorporated-enterprise landscape.
+- [WhatsApp: How to use click to chat](https://faq.whatsapp.com/5913398998672934/) — explains the user-initiated chat-link pattern used for outreach.
+
+## What makes Lead Forge useful
+
+- **Discover with SerpApi:** search Google Maps businesses by category and location instead of building a prospect list by hand.
+- **Qualify for the India-first workflow:** prioritize businesses with no website shown on their listing and a valid Indian mobile number; email-only contacts can also qualify.
+- **Keep the pipeline organized:** search, filter, sort, update lead status, and review activity in the CRM.
+- **Build with real business context:** use SerpApi place details, highly rated reviews, and available photos to inform Gemini website generation.
+- **Outreach at any stage:** open a prefilled WhatsApp message for any lead with a valid Indian mobile number; pitch the website idea before generation or the preview link after publication.
+
+## Product flow at a glance
+
+```mermaid
+flowchart TD
+    Creator[Freelancer or small agency] --> CRM[Lead Forge CRM]
+    CRM --> Search[SerpApi Google Maps search]
+    Search --> Filter{No website listed<br/>and a usable contact?}
+    Filter -->|Yes| Lead[Qualified prospect]
+    Filter -->|No| Skip[Skip or keep out of this workflow]
+    Lead --> Pitch{Website ready?}
+    Pitch -->|Not yet| Idea[Draft website idea]
+    Pitch -->|Yes| Link[Draft site-link pitch]
+    Lead --> Enrich[SerpApi place details, reviews, photos]
+    Enrich --> Generate[Gemini generates a tailored site]
+    Generate --> Store[(Cloudflare R2)]
+    Store --> Preview[Preview published site]
+    Preview --> Link
+    Idea --> Human[Creator reviews and sends]
+    Link --> Human
+    Human --> Client[Potential client conversation]
+```
+
+*“No website” means no website was shown in the Google Maps listing returned for the search; verify the business before making an offer.*
+
+## Run locally
+
+The Cloudflare Worker is the deployed app. Use Node.js 22 or newer:
+
+```powershell
+npm ci
+Copy-Item .dev.vars.example .dev.vars
+# Add your service API keys to .dev.vars
+npm run db:migrate:local
+npm run dev
+```
+
+Open the local URL printed by Wrangler. Keep real API keys in `.dev.vars`; never commit them.
+
+The repository also includes a separate Python/FastAPI development backend:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-cp .env.example .env        # add SerpAPI, Gemini, and Cloudflare R2 credentials
+Copy-Item .env.example .env
+# Add the required service credentials to .env
 uvicorn app.main:app --reload
 ```
-Open http://localhost:8000
 
-The commands above run the Python/FastAPI development backend. To develop against the Cloudflare Worker implementation locally, use the `Local Worker development` instructions in [DEPLOYMENT.md](./DEPLOYMENT.md).
+Open <http://localhost:8000>. For Cloudflare resources, required credentials, and production deployment, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
-## Layout
-- `app/serp.py` – SerpAPI Google Maps fetch, keeps listings with no `website`, no landline, and an Indian mobile number or email
-- `app/db.py` – Python/FastAPI CRM database adapter
-- `app/sitegen.py` – Gemini-generated website and atomic publication to Cloudflare R2
-- `src/worker.js` – Cloudflare Worker entry point for the deployed CRM, API, and published websites
-- `migrations/` – versioned Cloudflare D1 schema
-- `static/index.html` – newest-first lead CRM with serial numbers, 10-lead pagination, gear-menu edit/delete actions, redesigned pipeline labels, background-generation progress, and Outreach links for published sites
+## Project map
 
-Lead search rejects Indian landlines; phone contacts must be valid Indian mobile numbers, while an email address can qualify a listing with no phone. Existing leads remain below newly added leads. Outreach links require an Indian mobile number and a published site. Lead status keys remain compatible in storage while the CRM shows clearer labels: New lead, Site ready, Outreach sent, In conversation, Won, and Closed. The lead list supports text search, filters for status/site/contact, and sorting by newest, oldest, rating, review count, or business name.
+| File or folder | One-line explanation |
+|---|---|
+| `static/` | The CRM interface used by creators. |
+| `src/worker.js` | Serves the Cloudflare app, API, and published websites. |
+| `src/api.js` | Handles lead search, CRM actions, and API requests. |
+| `src/db.js` | Stores and retrieves app data in Cloudflare D1. |
+| `src/site-generation.js` | Enriches leads and runs queued website-generation jobs. |
+| `app/` | Contains the separate Python/FastAPI development backend. |
+| `migrations/` | Defines versioned database changes. |
+| `wrangler.toml` | Configures Cloudflare resources and local Worker development. |
+| `DEPLOYMENT.md` | Explains Cloudflare setup and deployment. |
 
-Website generation runs as a durable background job, so status changes and other CRM actions remain available while a site is being built. Queued/running work and its input snapshot are stored in SQLite and requeued when the app starts after a restart. Up to three different leads can generate sites at the same time; additional requests are queued, and each lead can have only one active generation job. The CRM shows the current generation stage and progress and reports completion or errors without blocking the page. Per-lead activity history records lead creation, edits, status changes, and site generation outcomes.
+## Commands
 
-Generated websites fetch Google Maps place details, opening hours, services, photos, and highly-rated reviews before Gemini 3.5 Flash designs and writes the complete page. Gemini receives the verified business data and reviews as text context and the selected photos as image inputs, so it can make an informed, distinct photo layout. Up to five verified Google Maps photos are preferred; if fewer than five are available, up to five Unsplash candidates are checked and only enough unique fallback photos are added to fill the remaining slots. Duplicate image content is removed, and a build is not published unless every selected image is used once, with verified local photo paths and the exact Google Maps embed and listing URLs. Generated pages use a responsive viewport and SEO title, text-only branding, desktop navigation links, and a simplified mobile navbar that shows only the business name and a direct CTA (Call, Email, or Directions); mobile navigation links and dropdowns are omitted. Before publishing, the build normalizes AI-generated navigation into this responsive structure and validates that desktop links are hidden on mobile and the mobile CTA is present. This can use up to three SerpAPI searches per generated site (place details, reviews, and photos). Set `SERPAPI_KEY`, `GEMINI_API_KEY`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, and `R2_SECRET_ACCESS_KEY` in `.env`; `UNSPLASH_ACCESS_KEY` is optional. The private Cloudflare R2 bucket defaults to `sites` (`R2_BUCKET_NAME` can override it). Create an R2 S3 API token with object read, write, and delete permissions for that bucket. The app uses Cloudflare's S3-compatible endpoint derived from the account ID; set `R2_ENDPOINT_URL` only when using a custom S3-compatible endpoint.
-
-Published HTML is stored as `{business-name}.html` in R2, with its photo assets under `{business-name}/`. The SEO-friendly slug is derived from the business name only: normalized to lowercase ASCII words joined with hyphens, with no locality, category, or generated ID appended. Visit each generated site at `/site/{business-name-slug}`; duplicate business-name slugs are rejected rather than overwritten. The app serves HTML and assets from the private bucket through same-domain routes; HTML is revalidated while photo assets use immutable caching. New builds are validated locally and their assets are uploaded before the HTML object is published. Each build makes exactly one Gemini generation request, with SDK retries and follow-up continuation requests disabled. A failed or truncated response is surfaced and not published; CDN and image-download failures are handled separately, and generated markup is locally repaired and validated before publishing. The one-call limit applies to Gemini generation; separate Maps/reviews/photo lookups and asset downloads remain necessary to prepare the business context and website. The `sites/` folder is not used to serve generated sites; `.site-builds/` is temporary build staging. Older sites previously generated to disk need to be regenerated to publish them to R2.
-
-Each Gemini generation uses one randomly seeded request with a randomized temperature and a 16,384-token output limit. Generation does not retry failed requests, continue truncated responses, or switch to another model if unavailable or over quota.
-
-The **Websites** workspace tab is available to root, admin, and developer users; editors cannot view or edit it. It lists published top-level HTML sites from R2 with business details, URL, file size, and last-modified time. Authorized users can edit a site's HTML directly and save it back to R2 without regenerating the site. Saves require the version loaded by the editor, so an intervening edit is reported as a conflict instead of silently overwriting newer HTML. The editor accepts complete HTML documents up to 100 KB and records successful edits in the audit log and the associated lead's activity history.
+| Command | What it does |
+|---|---|
+| `npm run dev` | Starts the local Cloudflare Worker. |
+| `npm test` | Runs the Node.js test suite. |
+| `npm run db:migrate:local` | Applies migrations to the local D1 database. |
+| `npm run deploy` | Deploys the Worker to Cloudflare. |
